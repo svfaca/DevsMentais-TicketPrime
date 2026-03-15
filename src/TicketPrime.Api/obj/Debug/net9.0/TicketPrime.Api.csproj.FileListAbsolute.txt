@@ -75,3 +75,4 @@ D:\dev\ticketprime\src\TicketPrime.Api\obj\Debug\net9.0\refint\TicketPrime.Api.d
 D:\dev\ticketprime\src\TicketPrime.Api\obj\Debug\net9.0\TicketPrime.Api.pdb
 D:\dev\ticketprime\src\TicketPrime.Api\obj\Debug\net9.0\TicketPrime.Api.genruntimeconfig.cache
 D:\dev\ticketprime\src\TicketPrime.Api\obj\Debug\net9.0\ref\TicketPrime.Api.dll
+D:\dev\ticketprime\src\TicketPrime.Api\obj\Debug\net9.0\TicketPrime.Api.sourcelink.json

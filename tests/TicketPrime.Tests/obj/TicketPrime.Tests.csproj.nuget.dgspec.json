@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "D:\\dev\\TicketPrime\\tests\\TicketPrime.Tests\\TicketPrime.Tests.csproj": {}
+    "D:\\dev\\ticketprime\\tests\\TicketPrime.Tests\\TicketPrime.Tests.csproj": {}
   },
   "projects": {
-    "D:\\dev\\TicketPrime\\tests\\TicketPrime.Tests\\TicketPrime.Tests.csproj": {
+    "D:\\dev\\ticketprime\\tests\\TicketPrime.Tests\\TicketPrime.Tests.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\dev\\TicketPrime\\tests\\TicketPrime.Tests\\TicketPrime.Tests.csproj",
+        "projectUniqueName": "D:\\dev\\ticketprime\\tests\\TicketPrime.Tests\\TicketPrime.Tests.csproj",
         "projectName": "TicketPrime.Tests",
-        "projectPath": "D:\\dev\\TicketPrime\\tests\\TicketPrime.Tests\\TicketPrime.Tests.csproj",
+        "projectPath": "D:\\dev\\ticketprime\\tests\\TicketPrime.Tests\\TicketPrime.Tests.csproj",
         "packagesPath": "C:\\Users\\luhde\\.nuget\\packages\\",
-        "outputPath": "D:\\dev\\TicketPrime\\tests\\TicketPrime.Tests\\obj\\",
+        "outputPath": "D:\\dev\\ticketprime\\tests\\TicketPrime.Tests\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "D:\\.net03\\NuGetPackages"

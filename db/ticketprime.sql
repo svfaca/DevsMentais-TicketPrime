@@ -1,10 +1,14 @@
-CREATE TABLE Usuarios (
+USE TicketPrime;
+GO
+CREATE TABLE Usuarios
+(
     Cpf VARCHAR(11) PRIMARY KEY,
     Nome VARCHAR(100) NOT NULL,
     Email VARCHAR(100) NOT NULL
 );
 
-CREATE TABLE Eventos (
+CREATE TABLE Eventos
+(
     Id INT IDENTITY(1,1) PRIMARY KEY,
     Nome VARCHAR(200) NOT NULL,
     CapacidadeTotal INT NOT NULL,
@@ -12,13 +16,15 @@ CREATE TABLE Eventos (
     PrecoPadrao DECIMAL(10,2) NOT NULL
 );
 
-CREATE TABLE Cupons (
+CREATE TABLE Cupons
+(
     Codigo VARCHAR(50) PRIMARY KEY,
     PorcentagemDesconto DECIMAL(5,2) NOT NULL,
     ValorMinimoRegra DECIMAL(10,2) NOT NULL
 );
 
-CREATE TABLE Reservas (
+CREATE TABLE Reservas
+(
     Id INT IDENTITY(1,1) PRIMARY KEY,
     UsuarioCpf VARCHAR(11) NOT NULL,
     EventoId INT NOT NULL,

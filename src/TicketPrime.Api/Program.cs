@@ -1,10 +1,13 @@
-using Microsoft.Data.SqlClient;
 using Dapper;
+using Microsoft.Data.SqlClient;
 
 var builder = WebApplication.CreateBuilder(args);
 var app = builder.Build();
 
-string connectionString = "Server=localhost;Database=TicketPrime;Trusted_Connection=True;TrustServerCertificate=True;";
+string connectionString =
+    "Server=(localdb)\\MSSQLLocalDB;Database=TicketPrime;Trusted_Connection=True;TrustServerCertificate=True;";
+
+app.MapGet("/", () => "TicketPrime API online");
 
 app.MapGet("/api/eventos", async () =>
 {
