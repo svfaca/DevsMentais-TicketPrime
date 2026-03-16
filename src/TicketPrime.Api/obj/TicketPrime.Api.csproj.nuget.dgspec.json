@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "D:\\dev\\ticketprime\\src\\TicketPrime.Api\\TicketPrime.Api.csproj": {}
+    "D:\\dev\\TicketPrime\\src\\TicketPrime.Api\\TicketPrime.Api.csproj": {}
   },
   "projects": {
-    "D:\\dev\\ticketprime\\src\\TicketPrime.Api\\TicketPrime.Api.csproj": {
+    "D:\\dev\\TicketPrime\\src\\TicketPrime.Api\\TicketPrime.Api.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\dev\\ticketprime\\src\\TicketPrime.Api\\TicketPrime.Api.csproj",
+        "projectUniqueName": "D:\\dev\\TicketPrime\\src\\TicketPrime.Api\\TicketPrime.Api.csproj",
         "projectName": "TicketPrime.Api",
-        "projectPath": "D:\\dev\\ticketprime\\src\\TicketPrime.Api\\TicketPrime.Api.csproj",
+        "projectPath": "D:\\dev\\TicketPrime\\src\\TicketPrime.Api\\TicketPrime.Api.csproj",
         "packagesPath": "C:\\Users\\luhde\\.nuget\\packages\\",
-        "outputPath": "D:\\dev\\ticketprime\\src\\TicketPrime.Api\\obj\\",
+        "outputPath": "D:\\dev\\TicketPrime\\src\\TicketPrime.Api\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "D:\\.net03\\NuGetPackages"
