@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+	<head>
+		<meta charset="UTF-8" />
+		<title>Login - TicketPrime</title>
+		<link rel="stylesheet" href="../style.css" />
+		<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
+	</head>
+	<body class="login-page">
+		<a href="../index.html" class="back-home-link" aria-label="Voltar para página principal">
+			<i class="bx bx-arrow-back"></i>
+		</a>
+		<div class="wrapper">
+			<form id="loginForm">
+				<h1 id="authTitle">TicketPrime - Login</h1>
+				<div class="auth-switch" role="tablist" aria-label="Alternar entre login e cadastro">
+					<button type="button" class="auth-toggle-btn active" id="loginModeBtn" aria-selected="true">Login</button>
+					<button type="button" class="auth-toggle-btn" id="registerModeBtn" aria-selected="false">Cadastro</button>
+				</div>
+				<div class="input-box register-only" hidden>
+					<input id="nomeCompleto" type="text" placeholder="Nome completo" />
+					<i class="bx bxs-user-detail"></i>
+				</div>
+				<div class="input-box login-only">
+					<input id="usuario" type="text" placeholder="CPF ou E-mail" required />
+					<i class="bx bxs-user"></i>
+				</div>
+				<div class="input-box register-only" hidden>
+					<input id="cpfCadastro" type="text" placeholder="CPF" inputmode="numeric" maxlength="14" />
+					<i class="bx bx-id-card"></i>
+				</div>
+				<div class="input-box register-only" hidden>
+					<input id="emailCadastro" type="email" placeholder="E-mail" />
+					<i class="bx bx-envelope"></i>
+				</div>
+				<div class="input-box">
+					<input id="senha" type="password" placeholder="Senha" required />
+					<i class="bx bxs-lock-alt"></i>
+				</div>
+				<div class="input-box register-only" hidden>
+					<input id="confirmarSenha" type="password" placeholder="Confirmar senha" />
+					<i class="bx bxs-lock-alt"></i>
+				</div>
+				<div id="loginMessage" class="login-message"></div>
+				<div class="remember-forgot">
+					<label><input type="checkbox" /> Lembrar-me </label>
+					<a href="#" id="forgotPasswordLink">Esqueceu a senha?</a>
+				</div>
+				<button type="submit" class="btn" id="submitBtn">Entrar</button>
+				<div class="register-link">
+					<p id="switchText">Ainda não tem conta? <a href="#" id="switchModeLink">Cadastre-se</a></p>
+					<p><a href="admin.html">Ir para painel administrador</a></p>
+				</div>
+			</form>
+		</div>
+
+		<script>
+			const API_BASE_URL = 'http://localhost:5129';
+			let isRegisterMode = false;
+			const loginForm = document.getElementById('loginForm');
+			const loginMessage = document.getElementById('loginMessage');
+			const authTitle = document.getElementById('authTitle');
+			const submitBtn = document.getElementById('submitBtn');
+			const switchText = document.getElementById('switchText');
+			const switchModeLink = document.getElementById('switchModeLink');
+			const loginModeBtn = document.getElementById('loginModeBtn');
+			const registerModeBtn = document.getElementById('registerModeBtn');
+			const forgotPasswordLink = document.getElementById('forgotPasswordLink');
+			const registerOnlyFields = document.querySelectorAll('.register-only');
+			const loginOnlyFields = document.querySelectorAll('.login-only');
+			const nomeCompleto = document.getElementById('nomeCompleto');
+			const cpfCadastro = document.getElementById('cpfCadastro');
+			const emailCadastro = document.getElementById('emailCadastro');
+			const usuario = document.getElementById('usuario');
+			const senha = document.getElementById('senha');
+			const confirmarSenha = document.getElementById('confirmarSenha');
+
+			function showMessage(texto, isError) {
+				loginMessage.textContent = texto;
+				loginMessage.className = isError ? 'login-message error' : 'login-message success';
+			}
+
+			function normalizeCpf(value) {
+				return value.replace(/\D/g, '');
+			}
+
+			function getRedirectByTipoConta(tipoConta) {
+				return String(tipoConta || '').toLowerCase() === 'adm'
+					? '../Homeauthadm.html'
+					: '../Homeauthuser.html';
+			}
+
+			function setAuthMode(registerMode) {
+				isRegisterMode = registerMode;
+				registerOnlyFields.forEach((field) => {
+					field.hidden = !registerMode;
+				});
+				loginOnlyFields.forEach((field) => {
+					field.hidden = registerMode;
+				});
+				nomeCompleto.required = registerMode;
+				cpfCadastro.required = registerMode;
+				emailCadastro.required = registerMode;
+				usuario.required = !registerMode;
+				confirmarSenha.required = registerMode;
+				authTitle.textContent = registerMode ? 'TicketPrime - Cadastro' : 'TicketPrime - Login';
+				submitBtn.textContent = registerMode ? 'Cadastrar' : 'Entrar';
+				loginModeBtn.classList.toggle('active', !registerMode);
+				registerModeBtn.classList.toggle('active', registerMode);
+				loginModeBtn.setAttribute('aria-selected', String(!registerMode));
+				registerModeBtn.setAttribute('aria-selected', String(registerMode));
+				forgotPasswordLink.style.visibility = registerMode ? 'hidden' : 'visible';
+				switchText.innerHTML = registerMode
+					? 'Já tem conta? <a href="#" id="switchModeLink">Entrar</a>'
+					: 'Ainda não tem conta? <a href="#" id="switchModeLink">Cadastre-se</a>';
+				loginMessage.textContent = '';
+				loginMessage.className = 'login-message';
+
+				document.getElementById('switchModeLink').addEventListener('click', (event) => {
+					event.preventDefault();
+					setAuthMode(!isRegisterMode);
+				});
+			}
+
+			loginModeBtn.addEventListener('click', () => setAuthMode(false));
+			registerModeBtn.addEventListener('click', () => setAuthMode(true));
+			switchModeLink.addEventListener('click', (event) => {
+				event.preventDefault();
+				setAuthMode(true);
+			});
+
+			loginForm.addEventListener('submit', async (event) => {
+				event.preventDefault();
+				submitBtn.disabled = true;
+
+				if (isRegisterMode && senha.value !== confirmarSenha.value) {
+					showMessage('As senhas nao conferem.', true);
+					submitBtn.disabled = false;
+					return;
+				}
+
+				try {
+					if (isRegisterMode) {
+						const cpfNormalizado = normalizeCpf(cpfCadastro.value);
+						if (cpfNormalizado.length !== 11) {
+							showMessage('Informe um CPF valido com 11 digitos.', true);
+							submitBtn.disabled = false;
+							return;
+						}
+
+						const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/json' },
+							body: JSON.stringify({
+								nome: nomeCompleto.value.trim(),
+								cpf: cpfNormalizado,
+								email: emailCadastro.value.trim(),
+								senha: senha.value
+							})
+						});
+
+						const payload = await response.json().catch(() => ({}));
+						if (!response.ok) {
+							const erro = typeof payload === 'string' ? payload : payload.mensagem;
+							showMessage(erro || 'Nao foi possivel concluir o cadastro.', true);
+							submitBtn.disabled = false;
+							return;
+						}
+
+						showMessage('Cadastro realizado. Redirecionando...', false);
+						const destinoCadastro = getRedirectByTipoConta(payload.tipoConta);
+						setTimeout(() => (window.location.href = destinoCadastro), 900);
+						return;
+					}
+
+					const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({
+							usuario: usuario.value.trim(),
+							senha: senha.value
+						})
+					});
+
+					if (!response.ok) {
+						showMessage('Usuario ou senha invalidos.', true);
+						submitBtn.disabled = false;
+						return;
+					}
+
+					const loginData = await response.json();
+					localStorage.setItem('ticketprimeUser', JSON.stringify(loginData));
+					showMessage('Login realizado. Redirecionando...', false);
+					const destino = getRedirectByTipoConta(loginData.tipoConta);
+					setTimeout(() => (window.location.href = destino), 900);
+				} catch (error) {
+					showMessage('Nao foi possivel conectar com a API. Verifique se o backend esta rodando.', true);
+					submitBtn.disabled = false;
+				}
+			});
+
+			setAuthMode(false);
+		</script>
+	</body>
+</html>

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360" role="img" aria-labelledby="title desc">
+  <title id="title">Ana Vitoria Tour Afeto</title>
+  <desc id="desc">Imagem ilustrativa de palco com luzes e publico para show ao vivo.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2D1F7D"/>
+      <stop offset="100%" stop-color="#7A5CFF"/>
+    </linearGradient>
+    <radialGradient id="light" cx="50%" cy="20%" r="60%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="640" height="360" fill="url(#bg)"/>
+  <rect x="0" y="0" width="640" height="220" fill="url(#light)" opacity="0.45"/>
+  <rect x="40" y="72" width="560" height="180" rx="18" fill="#1A1248" opacity="0.85"/>
+  <circle cx="180" cy="120" r="16" fill="#FFD974"/>
+  <circle cx="320" cy="110" r="16" fill="#FF8ACB"/>
+  <circle cx="460" cy="120" r="16" fill="#8BE6FF"/>
+  <path d="M40 274 C140 240, 500 240, 600 274 L600 360 L40 360 Z" fill="#120C33"/>
+  <text x="54" y="102" fill="#E9E5FF" font-family="Segoe UI, sans-serif" font-size="26" font-weight="700">ANA VITORIA</text>
+  <text x="54" y="136" fill="#CFC7FF" font-family="Segoe UI, sans-serif" font-size="18">Tour Afeto - Musica ao vivo</text>
+</svg>

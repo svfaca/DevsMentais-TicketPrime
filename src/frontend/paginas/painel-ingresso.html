@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+	<head>
+		<meta charset="UTF-8" />
+		<title>Painel de Ingressos - TicketPrime</title>
+		<link rel="stylesheet" href="../style.css" />
+		<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
+	</head>
+	<body class="painel-ingresso">
+		<div class="admin-dashboard">
+			<aside class="sidebar">
+				<div class="logo">TicketPrime</div>
+				<nav class="sidebar-nav">
+					<a href="home.html" class="sidebar-link"><i class="bx bxs-home"></i> Painel</a>
+					<a href="painel-ingresso.html" class="sidebar-link active"><i class="bx bxs-plus-circle"></i> Criar evento</a>
+					<a href="painel-ingresso.html" class="sidebar-link"><i class="bx bxs-calendar-event"></i> Meus eventos</a>
+					<a href="login.html" class="sidebar-link"><i class="bx bxs-log-in"></i> Login</a>
+				</nav>
+			</aside>
+
+			<main class="main-content">
+				<header>
+					<h1>Painel de Ingressos</h1>
+					<p>Cadastre, edite e gerencie ingressos e informações de evento.</p>
+				</header>
+
+				<section class="panel-actions">
+					<a href="home.html" class="btn btn-secondary">Voltar</a>
+				</section>
+
+				<section class="event-form">
+					<h2>Novo Evento</h2>
+					<form>
+						<label>Nome do Evento</label>
+						<input type="text" placeholder="Nome do evento" />
+						<label>Data</label>
+						<input type="date" />
+						<label>Capacidade</label>
+						<input type="number" min="1" placeholder="Capacidade" />
+						<label>Preço</label>
+						<input type="text" placeholder="R$ 0,00" />
+						<button type="submit" class="btn">Salvar evento</button>
+					</form>
+				</section>
+
+				<footer class="admin-footer">
+					<p>© 2026 TicketPrime Eventos. Todos os direitos reservados.</p>
+				</footer>
+			</main>
+		</div>
+	</body>
+</html>

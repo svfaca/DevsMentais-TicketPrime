@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360" role="img" aria-labelledby="title desc">
+  <title id="title">Luzes da Lapa</title>
+  <desc id="desc">Imagem ilustrativa de pista de musica eletronica com luzes neon.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#10062F"/>
+      <stop offset="100%" stop-color="#2D0E74"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="360" fill="url(#bg)"/>
+  <rect x="0" y="242" width="640" height="118" fill="#0A031D"/>
+  <path d="M70 220 L200 90 L318 220" fill="none" stroke="#9D7BFF" stroke-width="8"/>
+  <path d="M310 220 L430 80 L564 220" fill="none" stroke="#49D9FF" stroke-width="8"/>
+  <path d="M100 220 Q320 140 540 220" fill="none" stroke="#FF57C5" stroke-width="7"/>
+  <circle cx="198" cy="90" r="10" fill="#9D7BFF"/>
+  <circle cx="430" cy="80" r="10" fill="#49D9FF"/>
+  <circle cx="322" cy="160" r="9" fill="#FF57C5"/>
+  <rect x="238" y="204" width="168" height="30" rx="8" fill="#1E0A4A" stroke="#6B43EA"/>
+  <circle cx="260" cy="219" r="8" fill="#49D9FF"/>
+  <circle cx="384" cy="219" r="8" fill="#FF57C5"/>
+  <text x="50" y="64" fill="#EDE4FF" font-family="Segoe UI, sans-serif" font-size="28" font-weight="700">LUZES DA LAPA</text>
+  <text x="50" y="92" fill="#C9BCFF" font-family="Segoe UI, sans-serif" font-size="17">Noite eletronica com sets ao vivo</text>
+</svg>
