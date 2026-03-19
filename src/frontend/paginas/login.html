@@ -84,8 +84,20 @@
 				return value.replace(/\D/g, '');
 			}
 
+			function normalizeTipoConta(rawValue) {
+				const value = String(rawValue || '').trim().toLowerCase();
+				if (value === 'adm' || value === 'admin' || value === 'administrador') {
+					return 'adm';
+				}
+				return 'usuario';
+			}
+
+			function extractTipoConta(payload) {
+				return normalizeTipoConta(payload?.tipoConta ?? payload?.TipoConta);
+			}
+
 			function getRedirectByTipoConta(tipoConta) {
-				return String(tipoConta || '').toLowerCase() === 'adm'
+				return normalizeTipoConta(tipoConta) === 'adm'
 					? './Homeauthadm.html'
 					: './Homeauthuser.html';
 			}
@@ -168,7 +180,7 @@
 						}
 
 						showMessage('Cadastro realizado. Redirecionando...', false);
-						const destinoCadastro = getRedirectByTipoConta(payload.tipoConta);
+						const destinoCadastro = getRedirectByTipoConta(extractTipoConta(payload));
 						setTimeout(() => (window.location.href = destinoCadastro), 900);
 						return;
 					}
@@ -191,7 +203,7 @@
 					const loginData = await response.json();
 					localStorage.setItem('ticketprimeUser', JSON.stringify(loginData));
 					showMessage('Login realizado. Redirecionando...', false);
-					const destino = getRedirectByTipoConta(loginData.tipoConta);
+					const destino = getRedirectByTipoConta(extractTipoConta(loginData));
 					setTimeout(() => (window.location.href = destino), 900);
 				} catch (error) {
 					showMessage('Nao foi possivel conectar com a API. Verifique se o backend esta rodando.', true);

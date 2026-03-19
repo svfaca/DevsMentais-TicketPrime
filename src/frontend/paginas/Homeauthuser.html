@@ -127,7 +127,15 @@
           session = null;
         }
 
-        const tipoConta = String(session?.tipoConta || '').toLowerCase();
+        function normalizeTipoConta(rawValue) {
+          const value = String(rawValue || '').trim().toLowerCase();
+          if (value === 'adm' || value === 'admin' || value === 'administrador') {
+            return 'adm';
+          }
+          return 'usuario';
+        }
+
+        const tipoConta = normalizeTipoConta(session?.tipoConta ?? session?.TipoConta);
         if (tipoConta !== 'usuario') {
           window.location.replace('./login.html');
         }
