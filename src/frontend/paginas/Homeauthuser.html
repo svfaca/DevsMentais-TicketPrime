@@ -17,12 +17,108 @@
         <img src="../imagens/logo.png" alt="Logo TicketPrime" class="logo-img" />
         <span>TicketPrime</span>
       </div>
-      <nav class="navbar-links">
-        <a href="./login.html" class="navbar-btn">Cadastro</a>
-        <a href="./login.html" class="navbar-btn">Login</a>
-        <a href="./admin.html" class="navbar-btn">Criar Evento</a>
-      </nav>
+      <button
+        class="menu-toggle"
+        type="button"
+        aria-label="Abrir menu lateral"
+        aria-controls="userSidebar"
+        aria-expanded="false"
+      >
+        <i class="bx bx-menu"></i>
+      </button>
     </header>
+
+    <button
+      class="sidebar-backdrop"
+      id="sidebarBackdrop"
+      type="button"
+      aria-label="Fechar menu lateral"
+    ></button>
+
+    <aside class="user-sidebar" id="userSidebar" aria-hidden="true">
+      <div class="user-sidebar-header">
+        <h2>Minha Conta</h2>
+        <button class="menu-close" id="menuClose" type="button" aria-label="Fechar menu lateral">
+          <i class="bx bx-x"></i>
+        </button>
+      </div>
+
+      <div class="user-profile-card">
+        <div class="profile-avatar" id="profileAvatar" aria-label="Foto de perfil">
+          <img id="profileAvatarImage" alt="Foto de perfil" hidden />
+          <i class="bx bx-user" id="profileAvatarFallback"></i>
+        </div>
+        <h3 id="profileName">Usuario TicketPrime</h3>
+        <p id="profileEmail">usuario@ticketprime.com.br</p>
+      </div>
+
+      <nav class="user-sidebar-nav" aria-label="Opcoes da conta">
+        <a href="./painel-ingressos.html" class="user-sidebar-link">
+          <i class="bx bx-ticket"></i>
+          <span>Meus ingressos</span>
+        </a>
+
+        <button class="user-sidebar-link" id="createEventButton" type="button">
+          <i class="bx bx-calendar-plus"></i>
+          <span>Criar evento</span>
+        </button>
+
+        <button class="user-sidebar-link" type="button" data-open-settings="true">
+          <i class="bx bx-cog"></i>
+          <span>Configuracoes</span>
+        </button>
+      </nav>
+
+      <button class="sidebar-logout" id="logoutButton" type="button">
+        <i class="bx bx-log-out"></i>
+        <span>Sair</span>
+      </button>
+    </aside>
+
+    <section class="profile-settings-modal" id="profileSettingsModal" hidden>
+      <div class="profile-settings-dialog" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+        <div class="profile-settings-head">
+          <h2 id="settingsTitle">Configuracoes da conta</h2>
+          <button class="settings-close" id="settingsClose" type="button" aria-label="Fechar configuracoes">
+            <i class="bx bx-x"></i>
+          </button>
+        </div>
+
+        <form id="profileSettingsForm" class="profile-settings-form">
+          <div class="settings-photo-row">
+            <div class="settings-photo-current" aria-label="Foto atual do usuario">
+              <img id="settingsPhotoPreviewImage" alt="Foto atual do usuario" hidden />
+              <i class="bx bx-user" id="settingsPhotoPreviewFallback"></i>
+            </div>
+
+            <div class="settings-photo-actions">
+              <p>Foto atual do perfil</p>
+              <label for="settingsPhoto" class="settings-photo-button">Alterar foto</label>
+              <input
+                id="settingsPhoto"
+                name="settingsPhoto"
+                type="file"
+                accept="image/*"
+                class="settings-photo-input"
+              />
+              <span class="profile-photo-help">Escolha uma imagem para atualizar sua foto.</span>
+            </div>
+          </div>
+
+          <label for="settingsName">Nome</label>
+          <input id="settingsName" name="settingsName" type="text" placeholder="Seu nome" />
+
+          <label for="settingsEmail">Email</label>
+          <input id="settingsEmail" name="settingsEmail" type="email" placeholder="email@exemplo.com" />
+
+          <label for="settingsPhone">Telefone</label>
+          <input id="settingsPhone" name="settingsPhone" type="text" placeholder="(11) 99999-9999" />
+
+          <button class="btn" id="settingsSaveButton" type="submit" disabled>Salvar alteracoes</button>
+          <button class="btn btn-danger" id="deleteAccountButton" type="button">Excluir conta</button>
+        </form>
+      </div>
+    </section>
 
     <!-- ═══════════════ main ═══════════════ -->
     <main class="site-main">
@@ -97,6 +193,19 @@
           <div class="carousel-dots" aria-label="Indicadores do carrossel"></div>
         </div>
       </div>
+
+      <section class="my-tickets-section" aria-label="Meus ingressos">
+        <div class="my-tickets-header">
+          <h2 class="section-title">Meus ingressos</h2>
+          <a href="./painel-ingressos.html" class="my-tickets-link">Ver mais eventos</a>
+        </div>
+
+        <div class="my-tickets-grid" id="myTicketsGrid"></div>
+
+        <p class="my-tickets-empty" id="myTicketsEmpty" hidden>
+          Voce ainda nao se inscreveu em eventos.
+        </p>
+      </section>
     </main>
     <!-- ═══════════════ footer ═══════════════ -->
     <footer class="site-footer">
@@ -135,10 +244,487 @@
           return 'usuario';
         }
 
+        if (!session || typeof session !== 'object') {
+          window.location.replace('./login.html');
+          return;
+        }
+
         const tipoConta = normalizeTipoConta(session?.tipoConta ?? session?.TipoConta);
         if (tipoConta !== 'usuario') {
           window.location.replace('./login.html');
+          return;
         }
+
+        const API_BASE_URL = 'http://localhost:5129';
+        const body = document.body;
+        const sidebar = document.getElementById('userSidebar');
+        const backdrop = document.getElementById('sidebarBackdrop');
+        const menuToggle = document.querySelector('.menu-toggle');
+        const menuClose = document.getElementById('menuClose');
+        const createEventButton = document.getElementById('createEventButton');
+        const profileName = document.getElementById('profileName');
+        const profileEmail = document.getElementById('profileEmail');
+        const profileAvatarImage = document.getElementById('profileAvatarImage');
+        const profileAvatarFallback = document.getElementById('profileAvatarFallback');
+        const settingsModal = document.getElementById('profileSettingsModal');
+        const settingsClose = document.getElementById('settingsClose');
+        const settingsForm = document.getElementById('profileSettingsForm');
+        const settingsSaveButton = document.getElementById('settingsSaveButton');
+        const logoutButton = document.getElementById('logoutButton');
+        const settingsNameInput = document.getElementById('settingsName');
+        const settingsEmailInput = document.getElementById('settingsEmail');
+        const settingsPhoneInput = document.getElementById('settingsPhone');
+        const settingsPhotoInput = document.getElementById('settingsPhoto');
+        const settingsPhotoPreviewImage = document.getElementById('settingsPhotoPreviewImage');
+        const settingsPhotoPreviewFallback = document.getElementById('settingsPhotoPreviewFallback');
+        const deleteAccountButton = document.getElementById('deleteAccountButton');
+        const myTicketsGrid = document.getElementById('myTicketsGrid');
+        const myTicketsEmpty = document.getElementById('myTicketsEmpty');
+        const openSettingsButtons = document.querySelectorAll('[data-open-settings="true"]');
+        let selectedProfilePhoto = '';
+        let initialProfileState = {
+          nome: '',
+          email: '',
+          telefone: '',
+          fotoPerfil: ''
+        };
+
+        function getToken() {
+          return String(session?.token ?? session?.Token ?? '').trim();
+        }
+
+        function authHeaders() {
+          const token = getToken();
+          return token ? { Authorization: `Bearer ${token}` } : {};
+        }
+
+        function persistSession() {
+          localStorage.setItem('ticketprimeUser', JSON.stringify(session));
+        }
+
+        function getCurrentProfileState() {
+          return {
+            nome: settingsNameInput.value.trim(),
+            email: settingsEmailInput.value.trim(),
+            telefone: settingsPhoneInput.value.trim(),
+            fotoPerfil: String(selectedProfilePhoto || '').trim()
+          };
+        }
+
+        function hasProfileChanges() {
+          const current = getCurrentProfileState();
+          return (
+            current.nome !== initialProfileState.nome ||
+            current.email !== initialProfileState.email ||
+            current.telefone !== initialProfileState.telefone ||
+            current.fotoPerfil !== initialProfileState.fotoPerfil
+          );
+        }
+
+        function updateSaveButtonState() {
+          settingsSaveButton.disabled = !hasProfileChanges();
+        }
+
+        function normalizeTicketFromSource(rawTicket) {
+          if (!rawTicket || typeof rawTicket !== 'object') {
+            return null;
+          }
+
+          const nome = String(
+            rawTicket.nomeEvento ?? rawTicket.nome ?? rawTicket.evento ?? rawTicket.titulo ?? ''
+          ).trim();
+          const data = String(rawTicket.dataEvento ?? rawTicket.data ?? rawTicket.date ?? '').trim();
+          const local = String(rawTicket.localEvento ?? rawTicket.local ?? rawTicket.cidade ?? '').trim();
+          const imagem = String(
+            rawTicket.imagemEvento ?? rawTicket.imagem ?? rawTicket.foto ?? '../imagens/eventos/ana-tour.svg'
+          ).trim();
+
+          if (!nome) {
+            return null;
+          }
+
+          return { nome, data, local, imagem };
+        }
+
+        function normalizeTicketsList(rawList) {
+          if (!Array.isArray(rawList)) {
+            return [];
+          }
+
+          return rawList
+            .map(normalizeTicketFromSource)
+            .filter((ticket) => Boolean(ticket));
+        }
+
+        function renderMyTickets(tickets) {
+          if (!myTicketsGrid || !myTicketsEmpty) {
+            return;
+          }
+
+          myTicketsGrid.innerHTML = '';
+
+          if (!tickets.length) {
+            myTicketsEmpty.hidden = false;
+            return;
+          }
+
+          myTicketsEmpty.hidden = true;
+
+          const fragment = document.createDocumentFragment();
+
+          for (const ticket of tickets) {
+            const card = document.createElement('a');
+            card.className = 'my-ticket-card';
+            card.href = './painel-ingressos.html';
+            card.setAttribute('aria-label', ticket.nome);
+
+            card.innerHTML = `
+              <img class="my-ticket-image" src="${ticket.imagem}" alt="${ticket.nome}" />
+              <div class="my-ticket-meta">
+                <h3>${ticket.nome}</h3>
+                <p>${ticket.data || 'Data a confirmar'}${ticket.local ? ` • ${ticket.local}` : ''}</p>
+              </div>
+            `;
+
+            fragment.appendChild(card);
+          }
+
+          myTicketsGrid.appendChild(fragment);
+        }
+
+        async function loadMyTickets() {
+          let tickets = [];
+
+          try {
+            const response = await fetch(`${API_BASE_URL}/api/me/ingressos`, {
+              headers: {
+                ...authHeaders()
+              }
+            });
+
+            if (response.ok) {
+              const payload = await response.json().catch(() => []);
+              const apiList = Array.isArray(payload) ? payload : payload?.itens;
+              tickets = normalizeTicketsList(apiList);
+            }
+          } catch {
+            tickets = [];
+          }
+
+          if (!tickets.length) {
+            let localTickets = [];
+
+            try {
+              localTickets = JSON.parse(localStorage.getItem('ticketprimeUserTickets') || '[]');
+            } catch {
+              localTickets = [];
+            }
+
+            tickets = normalizeTicketsList(localTickets);
+          }
+
+          if (!tickets.length) {
+            const sessionTickets = session?.ingressos ?? session?.Ingressos ?? session?.eventosInscritos;
+            tickets = normalizeTicketsList(sessionTickets);
+          }
+
+          renderMyTickets(tickets);
+        }
+
+        function getUserValue(keys, fallbackValue) {
+          for (const key of keys) {
+            const value = session?.[key];
+            if (value !== undefined && value !== null && String(value).trim() !== '') {
+              return String(value).trim();
+            }
+          }
+          return fallbackValue;
+        }
+
+        function updateAvatar(photoUrl) {
+          if (photoUrl) {
+            profileAvatarImage.src = photoUrl;
+            profileAvatarImage.hidden = false;
+            profileAvatarFallback.hidden = true;
+
+            settingsPhotoPreviewImage.src = photoUrl;
+            settingsPhotoPreviewImage.hidden = false;
+            settingsPhotoPreviewFallback.hidden = true;
+            return;
+          }
+
+          profileAvatarImage.hidden = true;
+          profileAvatarImage.removeAttribute('src');
+          profileAvatarFallback.hidden = false;
+
+          settingsPhotoPreviewImage.hidden = true;
+          settingsPhotoPreviewImage.removeAttribute('src');
+          settingsPhotoPreviewFallback.hidden = false;
+        }
+
+        function refreshProfileInfo() {
+          const nome = getUserValue(['nome', 'Nome', 'name', 'Name'], 'Usuario TicketPrime');
+          const email = getUserValue(['email', 'Email'], 'usuario@ticketprime.com.br');
+          const telefone = getUserValue(['telefone', 'Telefone', 'phone', 'Phone'], '');
+          const foto = getUserValue(
+            ['fotoPerfil', 'FotoPerfil', 'foto', 'Foto', 'avatar', 'Avatar', 'profileImage'],
+            ''
+          );
+
+          profileName.textContent = nome;
+          profileEmail.textContent = email;
+          updateAvatar(foto);
+
+          settingsNameInput.value = nome;
+          settingsEmailInput.value = email;
+          settingsPhoneInput.value = telefone;
+          selectedProfilePhoto = foto;
+          settingsPhotoInput.value = '';
+
+          initialProfileState = {
+            nome: settingsNameInput.value.trim(),
+            email: settingsEmailInput.value.trim(),
+            telefone: settingsPhoneInput.value.trim(),
+            fotoPerfil: String(selectedProfilePhoto || '').trim()
+          };
+          updateSaveButtonState();
+        }
+
+        function openSidebar() {
+          body.classList.add('sidebar-open');
+          sidebar.setAttribute('aria-hidden', 'false');
+          menuToggle.setAttribute('aria-expanded', 'true');
+        }
+
+        function closeSidebar() {
+          body.classList.remove('sidebar-open');
+          sidebar.setAttribute('aria-hidden', 'true');
+          menuToggle.setAttribute('aria-expanded', 'false');
+        }
+
+        function openSettings() {
+          settingsModal.hidden = false;
+          body.classList.add('settings-open');
+          window.setTimeout(() => {
+            settingsNameInput.focus();
+          }, 20);
+        }
+
+        function closeSettings() {
+          settingsModal.hidden = true;
+          body.classList.remove('settings-open');
+        }
+
+        menuToggle.addEventListener('click', openSidebar);
+        menuClose.addEventListener('click', closeSidebar);
+        backdrop.addEventListener('click', closeSidebar);
+
+        for (const button of openSettingsButtons) {
+          button.addEventListener('click', () => {
+            closeSidebar();
+            openSettings();
+          });
+        }
+
+        settingsNameInput.addEventListener('input', updateSaveButtonState);
+        settingsEmailInput.addEventListener('input', updateSaveButtonState);
+        settingsPhoneInput.addEventListener('input', updateSaveButtonState);
+
+        settingsPhotoInput.addEventListener('change', () => {
+          const [file] = settingsPhotoInput.files || [];
+          if (!file) {
+            updateSaveButtonState();
+            return;
+          }
+
+          if (!file.type.startsWith('image/')) {
+            alert('Selecione um arquivo de imagem valido.');
+            settingsPhotoInput.value = '';
+            updateSaveButtonState();
+            return;
+          }
+
+          const reader = new FileReader();
+          reader.onload = () => {
+            selectedProfilePhoto = typeof reader.result === 'string' ? reader.result : '';
+            updateAvatar(selectedProfilePhoto);
+            updateSaveButtonState();
+          };
+          reader.readAsDataURL(file);
+        });
+
+        settingsClose.addEventListener('click', closeSettings);
+        settingsModal.addEventListener('click', (event) => {
+          if (event.target === settingsModal) {
+            closeSettings();
+          }
+        });
+
+        settingsForm.addEventListener('submit', async (event) => {
+          event.preventDefault();
+
+          if (!hasProfileChanges()) {
+            return;
+          }
+
+          const nome = settingsNameInput.value.trim();
+          const email = settingsEmailInput.value.trim();
+          const telefone = settingsPhoneInput.value.trim();
+          const fotoPerfil = selectedProfilePhoto;
+
+          if (!nome || !email) {
+            alert('Nome e email sao obrigatorios.');
+            return;
+          }
+
+          settingsSaveButton.disabled = true;
+
+          try {
+            const response = await fetch(`${API_BASE_URL}/api/me`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+                ...authHeaders()
+              },
+              body: JSON.stringify({ nome, email, telefone, fotoPerfil })
+            });
+
+            if (!response.ok) {
+              if (response.status === 404) {
+                // Fallback para ambiente com API antiga sem endpoint /api/me.
+                session.nome = nome;
+                session.email = email;
+                session.telefone = telefone;
+                session.fotoPerfil = fotoPerfil;
+                session.tipoConta = 'usuario';
+                persistSession();
+
+                refreshProfileInfo();
+                closeSettings();
+                closeSidebar();
+                alert('Configuracoes salvas localmente. Atualize/reinicie a API para persistir no banco.');
+                return;
+              }
+
+              const payload = await response.json().catch(() => ({}));
+              const errorMessage =
+                typeof payload === 'string' ? payload : payload?.mensagem || 'Nao foi possivel salvar as configuracoes.';
+              alert(errorMessage);
+              updateSaveButtonState();
+              return;
+            }
+
+            session.nome = nome;
+            session.email = email;
+            session.telefone = telefone;
+            session.fotoPerfil = fotoPerfil;
+            session.tipoConta = 'usuario';
+            persistSession();
+
+            refreshProfileInfo();
+            closeSettings();
+            closeSidebar();
+            alert('Configuracoes salvas com sucesso.');
+          } catch {
+            alert('Nao foi possivel conectar com a API para salvar seu perfil.');
+            updateSaveButtonState();
+          }
+        });
+
+        createEventButton.addEventListener('click', async () => {
+          const confirmacao = window.confirm(
+            'Sua conta esta prestes a se tornar uma conta adm. Deseja continuar?'
+          );
+
+          if (!confirmacao) {
+            return;
+          }
+
+          try {
+            const response = await fetch(`${API_BASE_URL}/api/me/promover-admin`, {
+              method: 'POST',
+              headers: {
+                ...authHeaders()
+              }
+            });
+
+            if (!response.ok) {
+              const payload = await response.json().catch(() => ({}));
+              const errorMessage =
+                typeof payload === 'string' ? payload : payload?.mensagem || 'Nao foi possivel promover sua conta.';
+              alert(errorMessage);
+              return;
+            }
+
+            const upgradedSession = await response.json();
+            session = {
+              ...session,
+              ...upgradedSession,
+              tipoConta: 'adm',
+              token: upgradedSession?.token ?? upgradedSession?.Token ?? session?.token
+            };
+            persistSession();
+
+            alert('Conta promovida para administrador com sucesso.');
+            window.location.replace('./Homeauthadm.html');
+          } catch {
+            alert('Nao foi possivel conectar com a API para promover sua conta.');
+          }
+        });
+
+        deleteAccountButton.addEventListener('click', async () => {
+          const confirmed = window.confirm(
+            'Tem certeza que deseja excluir sua conta? Esta acao nao pode ser desfeita.'
+          );
+
+          if (!confirmed) {
+            return;
+          }
+
+          try {
+            const response = await fetch(`${API_BASE_URL}/api/me`, {
+              method: 'DELETE',
+              headers: {
+                ...authHeaders()
+              }
+            });
+
+            if (!response.ok) {
+              const payload = await response.json().catch(() => ({}));
+              const errorMessage =
+                typeof payload === 'string' ? payload : payload?.mensagem || 'Nao foi possivel excluir sua conta.';
+              alert(errorMessage);
+              return;
+            }
+
+            localStorage.removeItem('ticketprimeUser');
+            alert('Conta excluida com sucesso.');
+            window.location.replace('./login.html');
+          } catch {
+            alert('Nao foi possivel conectar com a API para excluir sua conta.');
+          }
+        });
+
+        logoutButton.addEventListener('click', () => {
+          localStorage.removeItem('ticketprimeUser');
+          window.location.replace('./login.html');
+        });
+
+        document.addEventListener('keydown', (event) => {
+          if (event.key === 'Escape') {
+            closeSettings();
+            closeSidebar();
+          }
+        });
+
+        const updatedTipoConta = normalizeTipoConta(session?.tipoConta ?? session?.TipoConta);
+        if (updatedTipoConta === 'adm') {
+          window.location.replace('./Homeauthadm.html');
+          return;
+        }
+
+        refreshProfileInfo();
+        loadMyTickets();
       })();
     </script>
     <script src="../js/home-carousel.js"></script>
