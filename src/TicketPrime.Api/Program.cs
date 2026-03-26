@@ -133,6 +133,24 @@ app.MapPost("/api/cupons", async (CriarCupomRequest request, HttpContext httpCon
 
 // ── RESERVAS ─────────────────────────────────────────────────────────────────
 
+app.MapGet("/api/eventos/{id:int}/assentos-ocupados", async (int id) =>
+{
+    await using var connection = new NpgsqlConnection(connectionString);
+    var rows = await connection.QueryAsync<string>(
+        "SELECT Assento FROM Reservas WHERE EventoId = @Id AND Status != 'cancelada' AND Assento IS NOT NULL",
+        new { Id = id });
+
+    var ocupados = rows
+        .SelectMany(a => a.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        .Distinct()
+        .ToList();
+
+    return Results.Ok(ocupados);
+})
+.WithName("AssentosOcupados")
+.WithDescription("Retorna ids dos assentos ocupados de um evento")
+.Produces<List<string>>(200);
+
 app.MapPost("/api/reservas", async (CriarReservaRequest request, HttpContext httpContext) =>
 {
     var authError = TryAuthenticate(httpContext, tokenSecret, out var auth);
@@ -142,7 +160,7 @@ app.MapPost("/api/reservas", async (CriarReservaRequest request, HttpContext htt
 
     // Busca o evento
     var evento = await connection.QueryFirstOrDefaultAsync(
-        "SELECT Id, Nome, CapacidadeTotal, PrecoPadrao FROM Eventos WHERE Id = @Id",
+        "SELECT id, nome, capacidadetotal, precopadrao FROM Eventos WHERE Id = @Id",
         new { Id = request.EventoId });
 
     if (evento is null)
@@ -153,19 +171,28 @@ app.MapPost("/api/reservas", async (CriarReservaRequest request, HttpContext htt
         "SELECT COUNT(1) FROM Reservas WHERE EventoId = @EventoId AND Status != 'cancelada'",
         new { EventoId = request.EventoId });
 
-    if (reservados >= (int)evento.CapacidadeTotal)
+    if (reservados >= (int)evento.capacidadetotal)
         return Results.BadRequest("Evento sem vagas disponiveis.");
 
-    // Verifica se usuario já tem reserva ativa nesse evento
-    var reservaExistente = await connection.QueryFirstOrDefaultAsync(
-        "SELECT 1 FROM Reservas WHERE EventoId = @EventoId AND UsuarioCpf = @Cpf AND Status != 'cancelada'",
-        new { EventoId = request.EventoId, Cpf = auth!.Cpf });
+    // Verifica se algum dos assentos solicitados já está ocupado
+    if (!string.IsNullOrWhiteSpace(request.Assento))
+    {
+        var assentosRow = await connection.QueryAsync<string>(
+            "SELECT Assento FROM Reservas WHERE EventoId = @EventoId AND Status != 'cancelada' AND Assento IS NOT NULL",
+            new { EventoId = request.EventoId });
 
-    if (reservaExistente is not null)
-        return Results.BadRequest("Voce ja possui uma reserva ativa neste evento.");
+        var ocupados = assentosRow
+            .SelectMany(a => a.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            .ToHashSet();
+
+        var solicitados = request.Assento.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var conflito = solicitados.FirstOrDefault(s => ocupados.Contains(s));
+        if (conflito is not null)
+            return Results.BadRequest($"O assento '{conflito}' ja esta reservado.");
+    }
 
     // Calcula preço com cupom opcional
-    decimal precoFinal = (decimal)evento.PrecoPadrao;
+    decimal precoFinal = (decimal)evento.precopadrao;
     string? codigoCupomAplicado = null;
 
     if (!string.IsNullOrWhiteSpace(request.CodigoCupom))
@@ -187,23 +214,24 @@ app.MapPost("/api/reservas", async (CriarReservaRequest request, HttpContext htt
 
     // Cria a reserva
     var reservaId = await connection.QueryFirstAsync<int>(@"
-        INSERT INTO Reservas (EventoId, UsuarioCpf, PrecoFinal, CupomCodigo, Status, CriadoEm)
-        VALUES (@EventoId, @UsuarioCpf, @PrecoFinal, @CupomCodigo, 'confirmada', NOW())
+        INSERT INTO Reservas (EventoId, UsuarioCpf, PrecoFinal, CupomCodigo, Status, CriadoEm, Assento)
+        VALUES (@EventoId, @UsuarioCpf, @PrecoFinal, @CupomCodigo, 'confirmada', NOW(), @Assento)
         RETURNING Id",
         new
         {
             EventoId = request.EventoId,
             UsuarioCpf = auth!.Cpf,
             PrecoFinal = precoFinal,
-            CupomCodigo = codigoCupomAplicado
+            CupomCodigo = codigoCupomAplicado,
+            Assento = string.IsNullOrWhiteSpace(request.Assento) ? null : request.Assento.Trim()
         });
 
     return Results.Created($"/api/reservas/{reservaId}", new
     {
         Id = reservaId,
         EventoId = request.EventoId,
-        NomeEvento = (string)evento.Nome,
-        PrecoOriginal = (decimal)evento.PrecoPadrao,
+        NomeEvento = (string)evento.nome,
+        PrecoOriginal = (decimal)evento.precopadrao,
         PrecoFinal = precoFinal,
         CupomAplicado = codigoCupomAplicado,
         Status = "confirmada"
@@ -522,14 +550,16 @@ static async Task EnsureAuthSchemaAsync(string connectionString)
             PrecoFinal NUMERIC(10,2) NOT NULL,
             CupomCodigo TEXT,
             Status TEXT NOT NULL DEFAULT 'confirmada',
-            CriadoEm TIMESTAMPTZ NOT NULL
+            CriadoEm TIMESTAMPTZ NOT NULL,
+            Assento TEXT
         );
+        ALTER TABLE Reservas ADD COLUMN IF NOT EXISTS Assento TEXT;
     ");
 }
 
 record CriarEventoRequest(string Nome, int CapacidadeTotal, DateTime DataEvento, decimal PrecoPadrao);
 record CriarCupomRequest(string Codigo, decimal PorcentagemDesconto, decimal ValorMinimoRegra);
-record CriarReservaRequest(int EventoId, string? CodigoCupom);
+record CriarReservaRequest(int EventoId, string? CodigoCupom, string? Assento);
 record CriarUsuarioRequest(string Cpf, string Nome, string Email, string Senha, string TipoConta);
 record RegistrarRequest(string Nome, string Cpf, string Email, string Senha, string? TipoConta);
 record RegistrarAdminRequest(string Nome, string Cpf, string Email, string Senha);
