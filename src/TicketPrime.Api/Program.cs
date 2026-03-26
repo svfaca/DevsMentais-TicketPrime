@@ -2,7 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using Dapper;
-using Microsoft.Data.Sqlite;
+using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -42,7 +42,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("Frontend");
 
-var connectionString = $"Data Source={Path.Combine(AppContext.BaseDirectory, "ticketprime.db")}";
+var connectionString = builder.Configuration.GetConnectionString("NeonDB")
+    ?? throw new InvalidOperationException("Connection string 'NeonDB' nao encontrada. Configure em appsettings.json.");
 
 var tokenSecret = builder.Configuration["Auth:TokenSecret"] ?? "ticketprime-dev-token-secret-change-this";
 var bootstrapAdminKey = builder.Configuration["Auth:BootstrapAdminKey"] ?? "ticketprime-bootstrap-admin";
@@ -53,7 +54,7 @@ await EnsureAuthSchemaAsync(connectionString);
 
 app.MapGet("/api/eventos/publico", async () =>
 {
-    await using var connection = new SqliteConnection(connectionString);
+    await using var connection = new NpgsqlConnection(connectionString);
     var eventos = await connection.QueryAsync(
         "SELECT Id, Nome, CapacidadeTotal, DataEvento, PrecoPadrao FROM Eventos ORDER BY DataEvento DESC");
     return Results.Ok(eventos);
@@ -67,7 +68,7 @@ app.MapGet("/api/eventos", async (HttpContext httpContext) =>
     var authError = TryAuthenticate(httpContext, tokenSecret, out var auth, "adm");
     if (authError is not null) return authError;
 
-    await using var connection = new SqliteConnection(connectionString);
+    await using var connection = new NpgsqlConnection(connectionString);
     var eventos = await connection.QueryAsync(
         "SELECT Id, Nome, CapacidadeTotal, DataEvento, PrecoPadrao FROM Eventos WHERE CriadoPorCpf = @Cpf ORDER BY DataEvento DESC",
         new { Cpf = auth!.Cpf });
@@ -83,7 +84,7 @@ app.MapPost("/api/eventos", async (CriarEventoRequest request, HttpContext httpC
     var authError = TryAuthenticate(httpContext, tokenSecret, out var auth, "adm");
     if (authError is not null) return authError;
 
-    await using var connection = new SqliteConnection(connectionString);
+    await using var connection = new NpgsqlConnection(connectionString);
     await connection.ExecuteAsync(@"
         INSERT INTO Eventos (Nome, CapacidadeTotal, DataEvento, PrecoPadrao, CriadoPorCpf)
         VALUES (@Nome, @CapacidadeTotal, @DataEvento, @PrecoPadrao, @CriadoPorCpf)",
@@ -102,7 +103,7 @@ app.MapGet("/api/cupons", async (HttpContext httpContext) =>
     var authError = TryAuthenticate(httpContext, tokenSecret, out var auth, "adm");
     if (authError is not null) return authError;
 
-    await using var connection = new SqliteConnection(connectionString);
+    await using var connection = new NpgsqlConnection(connectionString);
     var cupons = await connection.QueryAsync(
         "SELECT Codigo, PorcentagemDesconto, ValorMinimoRegra FROM Cupons WHERE CriadoPorCpf = @Cpf ORDER BY Codigo",
         new { Cpf = auth!.Cpf });
@@ -118,7 +119,7 @@ app.MapPost("/api/cupons", async (CriarCupomRequest request, HttpContext httpCon
     var authError = TryAuthenticate(httpContext, tokenSecret, out var auth, "adm");
     if (authError is not null) return authError;
 
-    await using var connection = new SqliteConnection(connectionString);
+    await using var connection = new NpgsqlConnection(connectionString);
     await connection.ExecuteAsync(@"
         INSERT INTO Cupons (Codigo, PorcentagemDesconto, ValorMinimoRegra, CriadoPorCpf)
         VALUES (@Codigo, @PorcentagemDesconto, @ValorMinimoRegra, @CriadoPorCpf)",
@@ -137,7 +138,7 @@ app.MapPost("/api/reservas", async (CriarReservaRequest request, HttpContext htt
     var authError = TryAuthenticate(httpContext, tokenSecret, out var auth);
     if (authError is not null) return authError;
 
-    await using var connection = new SqliteConnection(connectionString);
+    await using var connection = new NpgsqlConnection(connectionString);
 
     // Busca o evento
     var evento = await connection.QueryFirstOrDefaultAsync(
@@ -187,8 +188,8 @@ app.MapPost("/api/reservas", async (CriarReservaRequest request, HttpContext htt
     // Cria a reserva
     var reservaId = await connection.QueryFirstAsync<int>(@"
         INSERT INTO Reservas (EventoId, UsuarioCpf, PrecoFinal, CupomCodigo, Status, CriadoEm)
-        OUTPUT INSERTED.Id
-        VALUES (@EventoId, @UsuarioCpf, @PrecoFinal, @CupomCodigo, 'confirmada', GETUTCDATE())",
+        VALUES (@EventoId, @UsuarioCpf, @PrecoFinal, @CupomCodigo, 'confirmada', NOW())
+        RETURNING Id",
         new
         {
             EventoId = request.EventoId,
@@ -217,7 +218,7 @@ app.MapGet("/api/reservas", async (HttpContext httpContext) =>
     var authError = TryAuthenticate(httpContext, tokenSecret, out var auth);
     if (authError is not null) return authError;
 
-    await using var connection = new SqliteConnection(connectionString);
+    await using var connection = new NpgsqlConnection(connectionString);
     var reservas = await connection.QueryAsync(@"
         SELECT r.Id, r.EventoId, e.Nome AS NomeEvento, e.DataEvento,
                r.PrecoFinal, r.CupomCodigo, r.Status, r.CriadoEm
@@ -238,7 +239,7 @@ app.MapDelete("/api/reservas/{id:int}", async (int id, HttpContext httpContext) 
     var authError = TryAuthenticate(httpContext, tokenSecret, out var auth);
     if (authError is not null) return authError;
 
-    await using var connection = new SqliteConnection(connectionString);
+    await using var connection = new NpgsqlConnection(connectionString);
     var reserva = await connection.QueryFirstOrDefaultAsync(
         "SELECT Id, UsuarioCpf, Status FROM Reservas WHERE Id = @Id",
         new { Id = id });
@@ -269,7 +270,7 @@ app.MapGet("/api/me", async (HttpContext httpContext) =>
     var authError = TryAuthenticate(httpContext, tokenSecret, out var auth);
     if (authError is not null) return authError;
 
-    await using var connection = new SqliteConnection(connectionString);
+    await using var connection = new NpgsqlConnection(connectionString);
     var usuario = await connection.QueryFirstOrDefaultAsync(
         "SELECT Cpf, Nome, Email, TipoConta FROM Usuarios WHERE Cpf = @Cpf",
         new { Cpf = auth!.Cpf });
@@ -326,7 +327,7 @@ app.MapPost("/api/auth/bootstrap-admin", async (BootstrapAdminRequest request) =
     if (request.ChaveInstalacao != bootstrapAdminKey)
         return Results.Unauthorized();
 
-    await using var connection = new SqliteConnection(connectionString);
+    await using var connection = new NpgsqlConnection(connectionString);
     var adminsExistentes = await connection.QueryFirstAsync<int>(
         "SELECT COUNT(1) FROM Usuarios WHERE TipoConta = 'adm'");
 
@@ -347,7 +348,7 @@ app.MapPost("/api/auth/login", async (LoginRequest request) =>
 
     var cpfNormalizado = NormalizeCpf(request.Usuario);
 
-    await using var connection = new SqliteConnection(connectionString);
+    await using var connection = new NpgsqlConnection(connectionString);
     var usuario = await connection.QueryFirstOrDefaultAsync<UsuarioLogin>(@"
         SELECT Cpf, Nome, Email, SenhaHash, TipoConta
         FROM Usuarios
@@ -385,7 +386,7 @@ static async Task<IResult> CreateAccountAsync(string connectionString, AccountCr
     if (cpfNormalizado.Length != 11)
         return Results.BadRequest("CPF deve conter 11 digitos.");
 
-    await using var connection = new SqliteConnection(connectionString);
+    await using var connection = new NpgsqlConnection(connectionString);
     var existente = await connection.QueryFirstOrDefaultAsync(
         "SELECT 1 FROM Usuarios WHERE Cpf = @Cpf OR Email = @Email",
         new { Cpf = cpfNormalizado, data.Email });
@@ -491,37 +492,37 @@ static bool TryBase64UrlDecode(string input, out byte[] data)
 
 static async Task EnsureAuthSchemaAsync(string connectionString)
 {
-    await using var connection = new SqliteConnection(connectionString);
+    await using var connection = new NpgsqlConnection(connectionString);
     await connection.ExecuteAsync(@"
         CREATE TABLE IF NOT EXISTS Usuarios (
-            Cpf TEXT PRIMARY KEY,
+            Cpf VARCHAR(11) PRIMARY KEY,
             Nome TEXT NOT NULL,
             Email TEXT NOT NULL UNIQUE,
             SenhaHash TEXT,
             TipoConta TEXT NOT NULL DEFAULT 'usuario'
         );
         CREATE TABLE IF NOT EXISTS Eventos (
-            Id INTEGER PRIMARY KEY AUTOINCREMENT,
+            Id SERIAL PRIMARY KEY,
             Nome TEXT NOT NULL,
             CapacidadeTotal INTEGER NOT NULL,
-            DataEvento TEXT NOT NULL,
-            PrecoPadrao REAL NOT NULL,
-            CriadoPorCpf TEXT REFERENCES Usuarios(Cpf)
+            DataEvento TIMESTAMPTZ NOT NULL,
+            PrecoPadrao NUMERIC(10,2) NOT NULL,
+            CriadoPorCpf VARCHAR(11) REFERENCES Usuarios(Cpf)
         );
         CREATE TABLE IF NOT EXISTS Cupons (
             Codigo TEXT PRIMARY KEY,
-            PorcentagemDesconto REAL NOT NULL,
-            ValorMinimoRegra REAL NOT NULL,
-            CriadoPorCpf TEXT REFERENCES Usuarios(Cpf)
+            PorcentagemDesconto NUMERIC(5,2) NOT NULL,
+            ValorMinimoRegra NUMERIC(10,2) NOT NULL,
+            CriadoPorCpf VARCHAR(11) REFERENCES Usuarios(Cpf)
         );
         CREATE TABLE IF NOT EXISTS Reservas (
-            Id INTEGER PRIMARY KEY AUTOINCREMENT,
+            Id SERIAL PRIMARY KEY,
             EventoId INTEGER NOT NULL REFERENCES Eventos(Id),
-            UsuarioCpf TEXT NOT NULL REFERENCES Usuarios(Cpf),
-            PrecoFinal REAL NOT NULL,
+            UsuarioCpf VARCHAR(11) NOT NULL REFERENCES Usuarios(Cpf),
+            PrecoFinal NUMERIC(10,2) NOT NULL,
             CupomCodigo TEXT,
             Status TEXT NOT NULL DEFAULT 'confirmada',
-            CriadoEm TEXT NOT NULL
+            CriadoEm TIMESTAMPTZ NOT NULL
         );
     ");
 }

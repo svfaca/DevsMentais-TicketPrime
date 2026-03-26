@@ -1,6 +1,53 @@
-const carousel = document.querySelector('[data-carousel]');
+const API_BASE = 'http://localhost:5129';
 
-if (carousel) {
+const IMAGENS_EVENTOS = [
+  './imagens/eventos/ana-tour.svg',
+  './imagens/eventos/sons-cidade.svg',
+  './imagens/eventos/comedia-prime.svg',
+  './imagens/eventos/luzes-lapa.svg',
+];
+
+function formatarData(dataStr) {
+  const data = new Date(dataStr);
+  return data.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+}
+
+async function carregarEventos() {
+  const track = document.getElementById('carousel-track');
+  if (!track) return;
+
+  try {
+    const resp = await fetch(`${API_BASE}/api/eventos/publico`);
+    if (!resp.ok) throw new Error('Erro ao buscar eventos');
+    const eventos = await resp.json();
+
+    track.innerHTML = '';
+    eventos.forEach((evento, index) => {
+      const imagem = IMAGENS_EVENTOS[index % IMAGENS_EVENTOS.length];
+      const item = document.createElement('a');
+      item.href = `./paginas/painel-ingressos.html?id=${evento.id}`;
+      item.className = 'carousel-item';
+      item.setAttribute('aria-label', evento.nome);
+      item.innerHTML = `
+        <img src="${imagem}" alt="${evento.nome}" class="card-image" />
+        <div class="carousel-meta">
+          <h3>${evento.nome}</h3>
+          <p>${formatarData(evento.dataevento)} • R$ ${Number(evento.precopadrao).toFixed(2)}</p>
+        </div>`;
+      track.appendChild(item);
+    });
+  } catch (e) {
+    track.innerHTML = '<p style="color:#fff;text-align:center">Não foi possível carregar os eventos.</p>';
+    console.error(e);
+  }
+
+  iniciarCarousel();
+}
+
+function iniciarCarousel() {
+  const carousel = document.querySelector('[data-carousel]');
+  if (!carousel) return;
+
   const items = Array.from(carousel.querySelectorAll('.carousel-item'));
   const prevButton = carousel.querySelector('.carousel-control.prev');
   const nextButton = carousel.querySelector('.carousel-control.next');
@@ -79,3 +126,5 @@ if (carousel) {
 
   updateCarousel();
 }
+
+carregarEventos();
