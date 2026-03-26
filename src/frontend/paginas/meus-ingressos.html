@@ -1,0 +1,507 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Meus Ingressos – TicketPrime</title>
+  <link rel="stylesheet" href="../style.css" />
+  <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
+  <style>
+    .tickets-page {
+      width: 100%;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 100px 20px 60px;
+    }
+
+    .tickets-page-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 32px;
+    }
+
+    .tickets-page-header a {
+      color: rgba(255,255,255,0.7);
+      font-size: 22px;
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    .tickets-page-header a:hover { color: #fff; }
+
+    .tickets-page-header h1 {
+      font-size: 24px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    /* ── Grid de ingressos ─────────────── */
+    .tickets-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+    }
+
+    .ticket-card {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 14px;
+      overflow: hidden;
+      backdrop-filter: blur(8px);
+      transition: transform 0.18s, border-color 0.18s, box-shadow 0.18s;
+    }
+    .ticket-card:hover {
+      transform: translateY(-3px);
+      border-color: rgba(83,74,183,0.6);
+      box-shadow: 0 8px 28px rgba(83,74,183,0.18);
+    }
+
+    .ticket-card-banner {
+      width: 100%;
+      height: 130px;
+      object-fit: cover;
+      display: block;
+      background: #1a1836;
+    }
+
+    .ticket-card-body {
+      padding: 14px 16px 16px;
+    }
+
+    .ticket-card-status {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 3px 9px;
+      border-radius: 99px;
+      margin-bottom: 8px;
+    }
+    .ticket-card-status.confirmada {
+      background: rgba(52,211,153,0.15);
+      color: #34d399;
+      border: 1px solid rgba(52,211,153,0.25);
+    }
+    .ticket-card-status.cancelada {
+      background: rgba(239,68,68,0.12);
+      color: #f87171;
+      border: 1px solid rgba(239,68,68,0.2);
+    }
+    .ticket-card-status.pendente {
+      background: rgba(250,204,21,0.12);
+      color: #facc15;
+      border: 1px solid rgba(250,204,21,0.2);
+    }
+
+    .ticket-card-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 5px;
+      line-height: 1.3;
+    }
+
+    .ticket-card-info {
+      font-size: 12px;
+      color: rgba(255,255,255,0.5);
+      margin-bottom: 3px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .ticket-card-price {
+      font-size: 16px;
+      font-weight: 700;
+      color: #a5a0f5;
+      margin-top: 10px;
+      margin-bottom: 12px;
+    }
+
+    .ticket-card-btn {
+      width: 100%;
+      background: #534ab7;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 9px 0;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .ticket-card-btn:hover { background: #3c3489; }
+
+    /* ── Empty state ─────────────────── */
+    .tickets-empty {
+      text-align: center;
+      color: rgba(255,255,255,0.45);
+      padding: 60px 20px;
+      grid-column: 1 / -1;
+    }
+    .tickets-empty i {
+      font-size: 52px;
+      display: block;
+      margin-bottom: 14px;
+      color: rgba(255,255,255,0.2);
+    }
+    .tickets-empty p { font-size: 15px; margin-bottom: 18px; }
+    .tickets-empty a {
+      display: inline-block;
+      background: #534ab7;
+      color: #fff;
+      padding: 10px 24px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+      transition: background 0.15s;
+    }
+    .tickets-empty a:hover { background: #3c3489; }
+
+    /* ── Modal QR Code ───────────────── */
+    .qr-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.72);
+      backdrop-filter: blur(6px);
+      z-index: 2000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.22s;
+    }
+    .qr-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .qr-modal {
+      background: #1a1830;
+      border: 1px solid rgba(255,255,255,0.13);
+      border-radius: 20px;
+      padding: 32px 28px 28px;
+      max-width: 360px;
+      width: 100%;
+      text-align: center;
+      transform: translateY(18px) scale(0.97);
+      transition: transform 0.22s;
+      position: relative;
+    }
+    .qr-overlay.open .qr-modal { transform: translateY(0) scale(1); }
+
+    .qr-modal-close {
+      position: absolute;
+      top: 14px; right: 16px;
+      background: none;
+      border: none;
+      color: rgba(255,255,255,0.5);
+      font-size: 22px;
+      cursor: pointer;
+      line-height: 1;
+      padding: 4px;
+      border-radius: 6px;
+      transition: color 0.15s, background 0.15s;
+    }
+    .qr-modal-close:hover { color: #fff; background: rgba(255,255,255,0.08); }
+
+    .qr-modal-badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 3px 10px;
+      border-radius: 99px;
+      background: rgba(83,74,183,0.25);
+      color: #a5a0f5;
+      border: 1px solid rgba(83,74,183,0.35);
+      margin-bottom: 10px;
+    }
+
+    .qr-modal-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 4px;
+      line-height: 1.3;
+    }
+
+    .qr-modal-sub {
+      font-size: 12px;
+      color: rgba(255,255,255,0.45);
+      margin-bottom: 22px;
+    }
+
+    .qr-box {
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px;
+      display: inline-flex;
+      margin-bottom: 20px;
+    }
+
+    .qr-box canvas {
+      display: block;
+    }
+
+    .qr-divider {
+      border: none;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      margin-bottom: 16px;
+    }
+
+    .qr-info-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: rgba(255,255,255,0.5);
+      margin-bottom: 6px;
+    }
+    .qr-info-row span:last-child { color: #fff; font-weight: 500; }
+
+    .qr-warning {
+      margin-top: 16px;
+      font-size: 11px;
+      color: rgba(255,255,255,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+    }
+  </style>
+</head>
+<body class="home-page">
+
+  <!-- Header -->
+  <header class="site-navbar">
+    <div class="navbar-logo">
+      <img src="../imagens/logo.png" alt="Logo TicketPrime" class="logo-img" />
+      <span>TicketPrime</span>
+    </div>
+  </header>
+
+  <main class="site-main" style="justify-content:flex-start;align-items:stretch;">
+    <div class="tickets-page">
+
+      <div class="tickets-page-header">
+        <a href="./Homeauthuser.html" aria-label="Voltar"><i class="bx bx-arrow-back"></i></a>
+        <h1>Meus Ingressos</h1>
+      </div>
+
+      <div class="tickets-grid" id="ticketsGrid">
+        <div class="tickets-empty" id="ticketsEmpty" hidden>
+          <i class="bx bx-ticket-alt"></i>
+          <p>Você ainda não possui ingressos.</p>
+          <a href="./Homeauthuser.html">Explorar eventos</a>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Modal QR Code -->
+  <div class="qr-overlay" id="qrOverlay" role="dialog" aria-modal="true" aria-labelledby="qrTitle">
+    <div class="qr-modal">
+      <button class="qr-modal-close" id="qrClose" aria-label="Fechar"><i class="bx bx-x"></i></button>
+      <div class="qr-modal-badge">Ingresso Digital</div>
+      <div class="qr-modal-title" id="qrTitle">—</div>
+      <div class="qr-modal-sub" id="qrSub">—</div>
+      <div class="qr-box">
+        <canvas id="qrCanvas" width="160" height="160"></canvas>
+      </div>
+      <hr class="qr-divider" />
+      <div class="qr-info-row"><span>Status</span><span id="qrStatus">—</span></div>
+      <div class="qr-info-row"><span>Assento(s)</span><span id="qrAssento">—</span></div>
+      <div class="qr-info-row"><span>Valor pago</span><span id="qrPreco">—</span></div>
+      <div class="qr-info-row"><span>Código</span><span id="qrCodigo">—</span></div>
+      <p class="qr-warning"><i class="bx bx-lock-alt"></i> Apresente este QR Code na entrada do evento</p>
+    </div>
+  </div>
+
+  <script>
+    // ── Auth ─────────────────────────────────────────────
+    let session;
+    try { session = JSON.parse(localStorage.getItem('ticketprimeUser') || 'null'); } catch { session = null; }
+
+    if (!session || typeof session !== 'object') {
+      window.location.replace('./login.html');
+      throw new Error('não autenticado');
+    }
+
+    function getToken() { return String(session?.token ?? session?.Token ?? '').trim(); }
+    function authHeaders() {
+      const t = getToken();
+      return t ? { Authorization: `Bearer ${t}` } : {};
+    }
+
+    // ── Imagens ciclo ─────────────────────────────────────
+    const IMAGENS = [
+      '../imagens/eventos/ana-tour.svg',
+      '../imagens/eventos/sons-cidade.svg',
+      '../imagens/eventos/comedia-prime.svg',
+      '../imagens/eventos/luzes-lapa.svg',
+    ];
+
+    // ── Renderização ──────────────────────────────────────
+    const grid  = document.getElementById('ticketsGrid');
+    const empty = document.getElementById('ticketsEmpty');
+
+    function fmtData(str) {
+      if (!str) return 'Data a confirmar';
+      return new Date(str).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+
+    function fmtPreco(val) {
+      return 'R$ ' + Number(val).toFixed(2).replace('.', ',');
+    }
+
+    function renderTickets(reservas) {
+      grid.innerHTML = '';
+
+      if (!reservas.length) {
+        empty.hidden = false;
+        grid.appendChild(empty);
+        return;
+      }
+
+      empty.hidden = true;
+
+      reservas.forEach((r, i) => {
+        const img    = IMAGENS[i % IMAGENS.length];
+        const status = String(r.status ?? r.Status ?? 'confirmada').toLowerCase();
+        const nome   = r.nomeevento ?? r.NomeEvento ?? r.nome ?? '—';
+        const data   = r.dataevento ?? r.DataEvento ?? r.dataEvento ?? '';
+        const preco  = r.precofinal ?? r.PrecoFinal ?? 0;
+        const assento = r.assento ?? r.Assento ?? '—';
+        const id     = r.id ?? r.Id ?? i;
+
+        const card = document.createElement('div');
+        card.className = 'ticket-card';
+        card.innerHTML = `
+          <img class="ticket-card-banner" src="${img}" alt="${nome}" />
+          <div class="ticket-card-body">
+            <span class="ticket-card-status ${status}">${status}</span>
+            <div class="ticket-card-title">${nome}</div>
+            <div class="ticket-card-info"><i class="bx bx-calendar"></i>${fmtData(data)}</div>
+            <div class="ticket-card-info"><i class="bx bx-chair"></i>Assento: ${assento}</div>
+            <div class="ticket-card-price">${fmtPreco(preco)}</div>
+            <button class="ticket-card-btn" data-id="${id}" data-nome="${nome}" data-data="${data}"
+              data-status="${status}" data-assento="${assento}" data-preco="${preco}">
+              <i class="bx bx-qr-scan"></i> Ver Ingresso
+            </button>
+          </div>
+        `;
+
+        grid.appendChild(card);
+      });
+
+      // Eventos dos botões
+      grid.querySelectorAll('.ticket-card-btn').forEach(btn => {
+        btn.addEventListener('click', () => openQr(btn.dataset));
+      });
+    }
+
+    // ── Buscar reservas ───────────────────────────────────
+    async function loadReservas() {
+      try {
+        const resp = await fetch('http://localhost:5129/api/reservas', {
+          headers: authHeaders()
+        });
+        if (!resp.ok) throw new Error();
+        const data = await resp.json();
+        renderTickets(Array.isArray(data) ? data : []);
+      } catch {
+        renderTickets([]);
+      }
+    }
+
+    loadReservas();
+
+    // ── QR Code (mock via canvas) ─────────────────────────
+    const overlay  = document.getElementById('qrOverlay');
+    const qrClose  = document.getElementById('qrClose');
+    const qrCanvas = document.getElementById('qrCanvas');
+    const qrTitle  = document.getElementById('qrTitle');
+    const qrSub    = document.getElementById('qrSub');
+    const qrStatus = document.getElementById('qrStatus');
+    const qrAssento= document.getElementById('qrAssento');
+    const qrPreco  = document.getElementById('qrPreco');
+    const qrCodigo = document.getElementById('qrCodigo');
+
+    function drawQrMock(canvas, text) {
+      const ctx = canvas.getContext('2d');
+      const sz  = canvas.width;
+      ctx.clearRect(0, 0, sz, sz);
+
+      // Gera padrão pseudo-aleatório determinístico a partir do texto
+      let hash = 0;
+      for (let c of text) hash = (hash * 31 + c.charCodeAt(0)) >>> 0;
+
+      const cells = 21;
+      const cell  = sz / cells;
+
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, sz, sz);
+
+      for (let r = 0; r < cells; r++) {
+        for (let c = 0; c < cells; c++) {
+          const seed = (hash ^ (r * 997 + c * 31)) >>> 0;
+          const dark = (seed % 3 !== 0);
+
+          // Cantos fixos (finder patterns)
+          const inFinder =
+            (r < 7 && c < 7) ||
+            (r < 7 && c >= cells - 7) ||
+            (r >= cells - 7 && c < 7);
+
+          let fill;
+          if (inFinder) {
+            const ri = r < 7 ? r : r - (cells - 7);
+            const ci = c < 7 ? c : c - (cells - 7);
+            fill = (ri === 0 || ri === 6 || ci === 0 || ci === 6 ||
+                    (ri >= 2 && ri <= 4 && ci >= 2 && ci <= 4));
+          } else {
+            fill = dark;
+          }
+
+          if (fill) {
+            ctx.fillStyle = '#111';
+            ctx.fillRect(Math.round(c * cell), Math.round(r * cell), Math.ceil(cell), Math.ceil(cell));
+          }
+        }
+      }
+    }
+
+    function openQr({ id, nome, data, status, assento, preco }) {
+      qrTitle.textContent  = nome;
+      qrSub.textContent    = `📅 ${fmtData(data)}`;
+      qrStatus.textContent = status;
+      qrAssento.textContent = assento;
+      qrPreco.textContent  = fmtPreco(preco);
+      qrCodigo.textContent = `TKP-${String(id).padStart(6, '0')}`;
+
+      drawQrMock(qrCanvas, `TKP-${id}-${nome}`);
+
+      overlay.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeQr() {
+      overlay.classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    qrClose.addEventListener('click', closeQr);
+    overlay.addEventListener('click', e => { if (e.target === overlay) closeQr(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQr(); });
+  </script>
+</body>
+</html>

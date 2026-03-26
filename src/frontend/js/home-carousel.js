@@ -1,10 +1,15 @@
 const API_BASE = 'http://localhost:5129';
 
+// Caminho relativo ao diretório do script (funciona de index.html e paginas/*.html)
+const _scriptDir = document.currentScript
+  ? document.currentScript.src.replace(/\/js\/home-carousel\.js.*$/, '')
+  : window.location.origin;
+
 const IMAGENS_EVENTOS = [
-  './imagens/eventos/ana-tour.svg',
-  './imagens/eventos/sons-cidade.svg',
-  './imagens/eventos/comedia-prime.svg',
-  './imagens/eventos/luzes-lapa.svg',
+  _scriptDir + '/imagens/eventos/ana-tour.svg',
+  _scriptDir + '/imagens/eventos/sons-cidade.svg',
+  _scriptDir + '/imagens/eventos/comedia-prime.svg',
+  _scriptDir + '/imagens/eventos/luzes-lapa.svg',
 ];
 
 function formatarData(dataStr) {
@@ -24,8 +29,9 @@ async function carregarEventos() {
     track.innerHTML = '';
     eventos.forEach((evento, index) => {
       const imagem = IMAGENS_EVENTOS[index % IMAGENS_EVENTOS.length];
+      // Link relativo ao diretório do script (paginas/painel-ingressos.html)
       const item = document.createElement('a');
-      item.href = `./paginas/painel-ingressos.html?id=${evento.id}`;
+      item.href = `${_scriptDir}/paginas/painel-ingressos.html?id=${evento.id}`;
       item.className = 'carousel-item';
       item.setAttribute('aria-label', evento.nome);
       item.innerHTML = `

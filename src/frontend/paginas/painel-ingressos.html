@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Compra de Ingressos – Ana Vitória</title>
+  <title>Compra de Ingressos – TicketPrime</title>
   <link rel="stylesheet" href="./ingressos.css" />
 </head>
 <body>
@@ -14,51 +14,25 @@
   <div class="left">
 
     <div class="event-header">
-      <span class="event-badge">Música ao Vivo</span>
-      <div class="event-title">Ana Vitória – Tour Afeto</div>
+      <span class="event-badge" id="event-badge">Evento</span>
+      <div class="event-title" id="event-title">Carregando...</div>
       <div class="event-meta">
-        <span class="meta-item">
-          📅 Sáb, 12 Abr 2025 · 21h
-        </span>
-        <span class="meta-item">
-          📍 Qualistage, Rio de Janeiro
-        </span>
+        <span class="meta-item" id="event-date">📅 —</span>
+        <span class="meta-item" id="event-price">🎟 —</span>
       </div>
     </div>
 
     <div class="spotlight-panel">
       <div class="spotlight-top">
-        <div class="spotlight-title">Eventos em destaque</div>
-        <a class="spotlight-link" href="#">Ver agenda completa</a>
+        <div class="spotlight-title">Evento selecionado</div>
+        <a class="spotlight-link" href="../index.html">Ver todos os eventos</a>
       </div>
-
       <div class="spotlight-grid">
-        <article class="spotlight-card active">
-          <img class="spotlight-cover" src="../imagens/eventos/ana-tour.svg" alt="Palco de show de musica ao vivo" loading="lazy" />
-          <div class="spotlight-tag">Destaque da semana</div>
-          <h3 class="spotlight-name">Ana Vitória - Tour Afeto</h3>
-          <p class="spotlight-info">12 Abr 2025 • Qualistage, Rio de Janeiro</p>
-        </article>
-
-        <article class="spotlight-card">
-          <img class="spotlight-cover" src="../imagens/eventos/sons-cidade.svg" alt="Festival urbano com musica e skyline" loading="lazy" />
-          <div class="spotlight-tag">Festival</div>
-          <h3 class="spotlight-name">Sons da Cidade</h3>
-          <p class="spotlight-info">19 Abr 2025 • Marina da Gloria, Rio de Janeiro</p>
-        </article>
-
-        <article class="spotlight-card">
-          <img class="spotlight-cover" src="../imagens/eventos/comedia-prime.svg" alt="Palco de stand-up com microfone" loading="lazy" />
-          <div class="spotlight-tag">Stand-up</div>
-          <h3 class="spotlight-name">Noite de Comedia Prime</h3>
-          <p class="spotlight-info">27 Abr 2025 • Vivo Rio, Rio de Janeiro</p>
-        </article>
-
-        <article class="spotlight-card">
-          <img class="spotlight-cover" src="../imagens/eventos/luzes-lapa.svg" alt="Pista eletronica com luzes neon" loading="lazy" />
-          <div class="spotlight-tag">Eletronica</div>
-          <h3 class="spotlight-name">Luzes da Lapa</h3>
-          <p class="spotlight-info">03 Mai 2025 • Fundicao Progresso, Rio de Janeiro</p>
+        <article class="spotlight-card active" id="evento-card">
+          <img class="spotlight-cover" id="evento-img" src="../imagens/eventos/ana-tour.svg" alt="" loading="lazy" />
+          <div class="spotlight-tag" id="evento-tag">Evento</div>
+          <h3 class="spotlight-name" id="evento-nome">Carregando...</h3>
+          <p class="spotlight-info" id="evento-info">—</p>
         </article>
       </div>
     </div>
@@ -101,26 +75,19 @@
     <div>
       <div class="section-label">Tipo de ingresso</div>
       <div class="ticket-types">
-        <div class="ticket-type active" onclick="selectType('pista')" id="type-pista">
+        <div class="ticket-type active" id="type-pista">
           <div>
             <div class="ticket-name">Pista</div>
             <div class="ticket-desc">Área geral em pé</div>
           </div>
-          <div class="ticket-price">R$ 120</div>
+          <div class="ticket-price" id="price-pista">R$ 120</div>
         </div>
-        <div class="ticket-type" onclick="selectType('vip')" id="type-vip">
+        <div class="ticket-type" id="type-vip">
           <div>
             <div class="ticket-name">VIP</div>
             <div class="ticket-desc">Área privilegiada</div>
           </div>
-          <div class="ticket-price">R$ 220</div>
-        </div>
-        <div class="ticket-type" onclick="selectType('camarote')" id="type-camarote">
-          <div>
-            <div class="ticket-name">Camarote</div>
-            <div class="ticket-desc">Vista panorâmica + bar</div>
-          </div>
-          <div class="ticket-price">R$ 380</div>
+          <div class="ticket-price" id="price-vip">R$ 220</div>
         </div>
       </div>
     </div>
@@ -129,12 +96,7 @@
     <div>
       <div class="section-label">Quantidade</div>
       <div class="qty-row">
-        <span class="qty-label">Ingressos</span>
-        <div class="qty-controls">
-          <button class="qty-btn" onclick="changeQty(-1)">−</button>
-          <span class="qty-num" id="qty-display">1</span>
-          <button class="qty-btn" onclick="changeQty(1)">+</button>
-        </div>
+        <span class="qty-label">Ingressos selecionados <span id="qty-display">0</span> / 2</span>
       </div>
     </div>
 
@@ -169,12 +131,10 @@
 
 <script>
   /* ─── Dados ──────────────────────────────────────── */
-  const prices    = { pista: 120, vip: 220, camarote: 380 };
-  const typeNames = { pista: 'Pista', vip: 'VIP', camarote: 'Camarote' };
+  const prices    = { pista: 120, vip: 220 };
+  const typeNames = { pista: 'Pista', vip: 'VIP' };
 
-  let selectedType  = 'pista';
-  let qty           = 1;
-  let selectedSeats = new Set();
+  let selectedSeats = new Map(); // id -> tipo ('pista' ou 'vip')
 
   /*
    * layout: cada entrada = [ rótulo, [índices de assento | null=corredor], [ocupado?] ]
@@ -224,7 +184,7 @@
         if (selectedSeats.has(id)) btn.classList.add('selected');
 
         if (!occupied[si]) {
-          btn.addEventListener('click', () => toggleSeat(id, btn));
+          btn.addEventListener('click', () => toggleSeat(id, btn, isVip));
         }
 
         row.appendChild(btn);
@@ -235,42 +195,31 @@
   }
 
   /* ─── Seleciona / desseleciona assento ───────────── */
-  function toggleSeat(id, el) {
+  function toggleSeat(id, el, isVip) {
     if (selectedSeats.has(id)) {
       selectedSeats.delete(id);
       el.classList.remove('selected');
     } else {
-      selectedSeats.add(id);
+      if (selectedSeats.size >= 2) {
+        alert('Você pode selecionar no máximo 2 assentos.');
+        return;
+      }
+      selectedSeats.set(id, isVip ? 'vip' : 'pista');
       el.classList.add('selected');
     }
     updateSeatsLabel();
+    updateSummary();
   }
 
   function updateSeatsLabel() {
     const lbl = document.getElementById('seats-label');
+    document.getElementById('qty-display').textContent = selectedSeats.size;
     if (selectedSeats.size === 0) {
       lbl.textContent = 'Nenhum assento selecionado';
     } else {
-      const list = [...selectedSeats].map(s => s.replace(/-/g, '')).join(', ');
+      const list = [...selectedSeats.keys()].map(s => s.replace(/-/g, '')).join(', ');
       lbl.textContent = `Selecionados: ${list}`;
     }
-  }
-
-  /* ─── Tipo de ingresso ───────────────────────────── */
-  function selectType(type) {
-    selectedType = type;
-    ['pista', 'vip', 'camarote'].forEach(t => {
-      document.getElementById('type-' + t)
-              .classList.toggle('active', t === type);
-    });
-    updateSummary();
-  }
-
-  /* ─── Quantidade ─────────────────────────────────── */
-  function changeQty(delta) {
-    qty = Math.max(1, Math.min(2, qty + delta));
-    document.getElementById('qty-display').textContent = qty;
-    updateSummary();
   }
 
   /* ─── Formata valor em R$ ────────────────────────── */
@@ -280,26 +229,180 @@
 
   /* ─── Atualiza o resumo ──────────────────────────── */
   function updateSummary() {
-    const price = prices[selectedType];
-    const fee   = Math.round(price * qty * 0.1);
-    const total = price * qty + fee;
+    if (selectedSeats.size === 0) {
+      document.getElementById('sum-type').textContent = '—';
+      document.getElementById('sum-unit').textContent = '—';
+      document.getElementById('sum-qty').textContent  = '× 0';
+      document.getElementById('sum-fee').textContent  = fmt(0);
+      document.getElementById('sum-total').textContent = fmt(0);
+      return;
+    }
 
-    document.getElementById('sum-type').textContent = typeNames[selectedType];
-    document.getElementById('sum-unit').textContent = fmt(price);
-    document.getElementById('sum-qty').textContent  = '× ' + qty;
+    const tipos = [...selectedSeats.values()];
+    const subtotal = tipos.reduce((sum, t) => sum + prices[t], 0);
+    const fee   = Math.round(subtotal * 0.1);
+    const total = subtotal + fee;
+    const label = tipos.every(t => t === 'vip') ? 'VIP'
+                : tipos.every(t => t === 'pista') ? 'Pista'
+                : 'Misto';
+    const unitLabel = tipos.length === 1
+      ? fmt(subtotal)
+      : tipos.map(t => fmt(prices[t])).join(' + ');
+
+    document.getElementById('sum-type').textContent = label;
+    document.getElementById('sum-unit').textContent = unitLabel;
+    document.getElementById('sum-qty').textContent  = `× ${tipos.length}`;
     document.getElementById('sum-fee').textContent  = fmt(fee);
     document.getElementById('sum-total').textContent = fmt(total);
   }
 
   /* ─── Finalizar compra ───────────────────────────── */
-  function handleBuy() {
+  async function handleBuy() {
+    if (selectedSeats.size === 0) {
+      alert('Selecione pelo menos um assento.');
+      return;
+    }
+
+    const session = JSON.parse(localStorage.getItem('ticketprimeUser') || 'null');
+    const token = session?.token;
+    if (!token) {
+      alert('Você precisa estar logado para comprar.');
+      window.location.href = '../paginas/login.html';
+      return;
+    }
+
+    const assentoStr = [...selectedSeats.keys()].join(',');
     const total = document.getElementById('sum-total').textContent;
-    alert(`Pedido confirmado!\n${qty}x ${typeNames[selectedType]} – ${total}`);
+
+    try {
+      const resp = await fetch('http://localhost:5129/api/reservas', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          EventoId: Number(eventoId),
+          Assento: assentoStr,
+          CodigoCupom: null
+        })
+      });
+
+      if (resp.ok) {
+        alert(`Compra confirmada!\nAssentos: ${assentoStr}\nTotal: ${total}`);
+        // Marca assentos comprados como ocupados localmente
+        [...selectedSeats.keys()].forEach(id => ocupadosDoServidor.add(id));
+        selectedSeats.clear();
+        rebuildGridComOcupados();
+        updateSeatsLabel();
+        updateSummary();
+        window.location.href = './meus-ingressos.html';
+      } else {
+        const msg = await resp.text();
+        alert(`Erro ao finalizar compra: ${msg}`);
+      }
+    } catch {
+      alert('Erro de conexão com o servidor.');
+    }
   }
 
   /* ─── Inicialização ──────────────────────────────── */
   buildGrid();
   updateSummary();
+
+  /* ─── Carregar evento + assentos ocupados da API ──── */
+  const IMAGENS = [
+    '../imagens/eventos/ana-tour.svg',
+    '../imagens/eventos/sons-cidade.svg',
+    '../imagens/eventos/comedia-prime.svg',
+    '../imagens/eventos/luzes-lapa.svg',
+  ];
+
+  const params = new URLSearchParams(window.location.search);
+  const eventoId = params.get('id');
+
+  let ocupadosDoServidor = new Set();
+
+  function rebuildGridComOcupados() {
+    const grid = document.getElementById('seat-grid');
+    grid.innerHTML = '';
+
+    layout.forEach((rowDef, ri) => {
+      const [label, seats] = rowDef;
+      const isVip = (label === 'VIP');
+
+      const row = document.createElement('div');
+      row.className = 'seat-row';
+
+      const lbl = document.createElement('div');
+      lbl.className = 'row-label';
+      lbl.textContent = isVip ? 'V' : label;
+      row.appendChild(lbl);
+
+      seats.forEach((s, si) => {
+        if (s === null) {
+          const gap = document.createElement('div');
+          gap.className = 'seat-gap';
+          row.appendChild(gap);
+          return;
+        }
+
+        const id  = `${label}${ri}-${s}`;
+        const isOccupied = ocupadosDoServidor.has(id);
+        const btn = document.createElement('div');
+        btn.className = 'seat ' + (isOccupied ? 'occupied' : (isVip ? 'vip' : 'available'));
+        btn.title = `Fileira ${label}, assento ${s + 1}`;
+
+        if (selectedSeats.has(id)) btn.classList.add('selected');
+
+        if (!isOccupied) {
+          btn.addEventListener('click', () => toggleSeat(id, btn, isVip));
+        }
+
+        row.appendChild(btn);
+      });
+
+      grid.appendChild(row);
+    });
+  }
+
+  if (eventoId) {
+    Promise.all([
+      fetch(`http://localhost:5129/api/eventos/publico`).then(r => r.json()),
+      fetch(`http://localhost:5129/api/eventos/${eventoId}/assentos-ocupados`).then(r => r.json()).catch(() => [])
+    ]).then(([eventos, ocupados]) => {
+      ocupadosDoServidor = new Set(ocupados);
+      rebuildGridComOcupados();
+
+      const ev = eventos.find(e => String(e.id) === String(eventoId));
+      if (!ev) return;
+
+      const idx = eventos.indexOf(ev);
+      const img = IMAGENS[idx % IMAGENS.length];
+      const data = new Date(ev.dataevento).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+      const preco = Number(ev.precopadrao).toFixed(2).replace('.', ',');
+
+      document.title = `Compra de Ingressos \u2013 ${ev.nome}`;
+      document.getElementById('event-badge').textContent = 'Evento';
+      document.getElementById('event-title').textContent = ev.nome;
+      document.getElementById('event-date').textContent = `\uD83D\uDCC5 ${data}`;
+      document.getElementById('event-price').textContent = `\uD83C\uDFAB R$ ${preco}`;
+      document.getElementById('evento-img').src = img;
+      document.getElementById('evento-img').alt = ev.nome;
+      document.getElementById('evento-tag').textContent = 'Evento';
+      document.getElementById('evento-nome').textContent = ev.nome;
+      document.getElementById('evento-info').textContent = `${data} \u2022 R$ ${preco}`;
+
+      const base = Number(ev.precopadrao);
+      prices.pista = Math.round(base);
+      prices.vip   = Math.round(base * 1.8);
+
+      document.getElementById('price-pista').textContent = `R$ ${prices.pista}`;
+      document.getElementById('price-vip').textContent   = `R$ ${prices.vip}`;
+
+      updateSummary();
+    }).catch(() => {});
+  }
 </script>
 
 </body>
