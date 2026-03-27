@@ -34,11 +34,11 @@ async function carregarEventos() {
       item.href = `${_scriptDir}/paginas/painel-ingressos.html?id=${evento.id}`;
       item.className = 'carousel-item';
       item.setAttribute('aria-label', evento.nome);
+      item.style.backgroundImage = `url('${imagem}')`;
       item.innerHTML = `
-        <img src="${imagem}" alt="${evento.nome}" class="card-image" />
         <div class="carousel-meta">
           <h3>${evento.nome}</h3>
-          <p>${formatarData(evento.dataevento)} • R$ ${Number(evento.precopadrao).toFixed(2)}</p>
+          <p>R$ ${Number(evento.precopadrao).toFixed(2)}</p>
         </div>`;
       track.appendChild(item);
     });

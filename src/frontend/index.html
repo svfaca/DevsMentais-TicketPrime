@@ -26,39 +26,29 @@
 
     <!-- ═══════════════ main ═══════════════ -->
     <main class="site-main">
-      <div class="welcome-content">
-        <h1>Bem-vindo ao TicketPrime</h1>
-        <p>Gerencie seus eventos e venda ingressos de forma fácil e rápida.</p>
-      </div>
-
-      <section class="search-panel" aria-label="Pesquisa de eventos">
-        <div class="input-box search-input">
-          <input type="text" placeholder="Buscar experiências" />
-          <i class="bx bx-search"></i>
+      <!-- ═══════════════ hero section ═══════════════ -->
+      <section class="hero-section" id="hero-section">
+        <div class="hero-container" id="hero-container">
+          <!-- Hero dinâmico gerado pelo JS -->
         </div>
+        <!-- Navegação do hero -->
+        <button class="hero-control hero-prev" type="button" aria-label="Evento anterior">
+          <i class="bx bx-chevron-left"></i>
+        </button>
+        <button class="hero-control hero-next" type="button" aria-label="Próximo evento">
+          <i class="bx bx-chevron-right"></i>
+        </button>
+        <!-- Indicadores -->
+        <div class="hero-dots" id="hero-dots" aria-label="Indicadores de eventos"></div>
       </section>
 
-      <div class="events-section">
-        <h2 class="section-title">Eventos em destaque</h2>
-
-        <div class="events-carousel" data-carousel>
-          <button class="carousel-control prev" type="button" aria-label="Evento anterior">
-            <i class="bx bx-chevron-left"></i>
-          </button>
-
-          <div class="carousel-viewport">
-            <div class="carousel-track" id="carousel-track">
-              <!-- eventos carregados dinamicamente via API -->
-            </div>
-          </div>
-
-          <button class="carousel-control next" type="button" aria-label="Próximo evento">
-            <i class="bx bx-chevron-right"></i>
-          </button>
-
-          <div class="carousel-dots" aria-label="Indicadores do carrossel"></div>
+      <!-- ═══════════════ events grid section ═══════════════ -->
+      <section class="events-grid-section">
+        <h2 class="section-title">Próximos Eventos</h2>
+        <div class="events-grid" id="events-grid">
+          <!-- eventos carregados dinamicamente -->
         </div>
-      </div>
+      </section>
     </main>
     <!-- ═══════════════ footer ═══════════════ -->
     <footer class="site-footer">
@@ -79,6 +69,6 @@
         © 2026 TicketPrime Eventos. Todos os direitos reservados.
       </p>
     </footer>
-    <script src="./js/home-carousel.js"></script>
+    <script src="./js/events-hero.js"></script>
   </body>
 </html>
