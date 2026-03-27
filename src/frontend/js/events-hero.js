@@ -1,5 +1,5 @@
 // Dados fictícios dos eventos
-const EVENTS_DATA = [
+let EVENTS_DATA = [
     {
         id: 0,
         nome: 'TicketPrime - Bem-vindo',
@@ -24,17 +24,6 @@ const EVENTS_DATA = [
     },
     {
         id: 2,
-        nome: 'Leo Santana - Energia Total',
-        artista: 'Leo Santana',
-        data: '2026-04-22',
-        local: 'Estádio da Juventude, Salvador - BA',
-        descricao: 'Leo Santana apresenta um show energético com participações especiais e muita animação.',
-        preco: 120.00,
-        imagem: './imagens/leo.jpg',
-        tipo: 'evento'
-    },
-    {
-        id: 3,
         nome: 'Matue & Brandão - Encontro de Gerações',
         artista: 'Matue & Brandão',
         data: '2026-05-10',
@@ -45,18 +34,7 @@ const EVENTS_DATA = [
         tipo: 'evento'
     },
     {
-        id: 4,
-        nome: 'Luan Santana - Acústico',
-        artista: 'Luan Santana',
-        data: '2026-06-05',
-        local: 'Teatro Bradesco, Rio de Janeiro - RJ',
-        descricao: 'Apresentação intimista do artista em ambiente acústico com suas músicas mais emocionantes.',
-        preco: 200.00,
-        imagem: './imagens/luan.jpg',
-        tipo: 'evento'
-    },
-    {
-        id: 5,
+        id: 3,
         nome: 'Leo Santana - Festa do Povo',
         artista: 'Leo Santana',
         data: '2026-07-12',
@@ -67,17 +45,75 @@ const EVENTS_DATA = [
         tipo: 'evento'
     },
     {
-        id: 6,
-        nome: 'Matue - Ultrassom Tour',
-        artista: 'Matue',
-        data: '2026-08-20',
-        local: 'Sala São Jorge, São Paulo - SP',
-        descricao: 'Turnê especial com som envolvente e performance de tirar o fôlego do artista.',
-        preco: 160.00,
-        imagem: './imagens/matueebrandao.jpg',
+        id: 4,
+        nome: 'Bienal Internacional do Livro - São Paulo 2026',
+        artista: 'Diversos Autores',
+        data: '2026-09-02',
+        local: 'Expo Center Norte, São Paulo - SP',
+        descricao: 'A maior celebração da literatura brasileira e internacional. Autores renomados, palestras, lançamentos de obras e experiências imersivas.',
+        preco: 45.00,
+        imagem: './imagens/bienal.jpg',
         tipo: 'evento'
+    },
+    {
+        id: 5,
+        nome: 'Futurecom 2026 - Festival de Tecnologia e Inovação',
+        artista: 'Tech Leaders',
+        data: '2026-09-15',
+        local: 'Riocentro, Rio de Janeiro - RJ',
+        descricao: 'Imersão no futuro com palestras sobre IA, blockchain, realidade virtual e as maiores tendências tecnológicas do ano.',
+        preco: 120.00,
+        imagem: './imagens/futurecom.png',
+        tipo: 'evento'
+    },
+    {
+        id: 6,
+        nome: 'CCXP 2026 - Comic Con Experience',
+        artista: 'Criadores de Conteúdo',
+        data: '2026-10-05',
+        local: 'São Paulo Expo, São Paulo - SP',
+        descricao: 'O maior festival de cultura pop, quadrinhos, filmes e séries. Encontro com criadores, cosplayers e fãs apaixonados.',
+        preco: 95.00,
+        imagem: './imagens/ccxp.jpg',
+        tipo: 'evento'
+    },
+    {
+        id: 7,
+        nome: 'Kanye West - O Retorno',
+        artista: 'Kanye West',
+        data: '2026-10-28',
+        local: 'Estádio do Morumbi, São Paulo - SP',
+        descricao: 'Show épico do produtor e artista que revolucionou a música. Hits clássicos, novos lançamentos e colaborações especiais.',
+        preco: 350.00,
+        imagem: './imagens/kanye.jpg',
+        tipo: 'evento'
+    },
+    {
+        id: 8,
+        nome: 'Swing Gala Festival 2026',
+        artista: 'Jazz Legends',
+        data: '2026-11-12',
+        local: 'Teatro Municipal, Rio de Janeiro - RJ',
+        descricao: 'Noite memorável de swing para casais é solteiros liberais. Dança, música ao vivo e muita elegância.',
+        preco: 180.00,
+        imagem: './imagens/SWING.png',
+        tipo: 'evento',
+        fullImage: true
     }
 ];
+
+// Função para embaralhar array (Fisher-Yates shuffle)
+function embaralharEventos() {
+    const eventosSlide = EVENTS_DATA[0]; // Preservar slide inicial
+    const eventos = EVENTS_DATA.slice(1); // Pegar apenas os eventos
+
+    for (let i = eventos.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [eventos[i], eventos[j]] = [eventos[j], eventos[i]];
+    }
+
+    EVENTS_DATA = [eventosSlide, ...eventos]; // Recolocar slide inicial no início
+}
 
 // Função para carregar hero dinâmico
 function carregarHero() {
@@ -97,6 +133,9 @@ function carregarHero() {
             heroItem.classList.add('hero-item-inicial');
         } else {
             heroItem.style.backgroundImage = `url('${evento.imagem}')`;
+            if (evento.fullImage) {
+                heroItem.classList.add('hero-item-full');
+            }
         }
         
         heroItem.setAttribute('data-index', index);
@@ -139,6 +178,16 @@ function carregarHero() {
     carregarDots();
     // Inicializar controles do hero
     iniciarHeroControles();
+    // Adicionar evento ao botão Explorar Eventos
+    const botaoExplorar = heroContainer.querySelector('.hero-item.active .hero-actions .hero-btn.primary');
+    if (botaoExplorar && botaoExplorar.textContent.includes('Explorar Eventos')) {
+        botaoExplorar.addEventListener('click', () => {
+            const eventsSection = document.querySelector('.events-grid-section');
+            if (eventsSection) {
+                eventsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
+    }
 }
 
 // Função para carregar dots (indicadores)
@@ -256,6 +305,21 @@ function carregarGridEventos() {
 
 // Initialize quando DOM carregar
 document.addEventListener('DOMContentLoaded', () => {
+    // Embaralhar eventos em ordem aleatória
+    embaralharEventos();
+    
     carregarHero();
     carregarGridEventos();
+    
+    // Adicionar evento ao logo/TicketPrime para voltar ao topo
+    const navbarLogo = document.querySelector('.navbar-logo');
+    if (navbarLogo) {
+        navbarLogo.style.cursor = 'pointer';
+        navbarLogo.addEventListener('click', () => {
+            const heroSection = document.getElementById('hero-section');
+            if (heroSection) {
+                heroSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
+    }
 });

@@ -561,6 +561,11 @@ body.light-mode .theme-toggle {
     );
 }
 
+.hero-item-full {
+    background-size: contain !important;
+    background-repeat: no-repeat;
+}
+
 .hero-content {
     position: relative;
     z-index: 2;
