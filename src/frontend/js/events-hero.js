@@ -221,8 +221,19 @@ function formatarData(dataStr) {
     });
 }
 
+// Variável global para controlar o autoplay
+let autoPlayInterval = null;
+let heroCurrentIndex = 0;
+
+// Função para reiniciar o autoplay
+function reiniciarAutoPlay() {
+    if (autoPlayInterval) clearInterval(autoPlayInterval);
+    startAutoPlay();
+}
+
 // Função para mudar o hero
 function mudarHero(index) {
+    heroCurrentIndex = index;
     const heroItems = document.querySelectorAll('.hero-item');
     const heroGots = document.querySelectorAll('.hero-dot');
 
@@ -233,33 +244,49 @@ function mudarHero(index) {
     if (heroGots[index]) heroGots[index].classList.add('active');
 }
 
+// Função para iniciar o autoplay
+function startAutoPlay() {
+    const totalEventos = EVENTS_DATA.length;
+
+    autoPlayInterval = setInterval(() => {
+        heroCurrentIndex = (heroCurrentIndex + 1) % totalEventos;
+        mudarHero(heroCurrentIndex);
+    }, 8000);
+}
+
 // Função para iniciar controles do hero
 function iniciarHeroControles() {
     const prevBtn = document.querySelector('.hero-prev');
     const nextBtn = document.querySelector('.hero-next');
-
-    let currentIndex = 0;
     const totalEventos = EVENTS_DATA.length;
 
     if (prevBtn) {
         prevBtn.addEventListener('click', () => {
-            currentIndex = (currentIndex - 1 + totalEventos) % totalEventos;
-            mudarHero(currentIndex);
+            heroCurrentIndex = (heroCurrentIndex - 1 + totalEventos) % totalEventos;
+            mudarHero(heroCurrentIndex);
+            reiniciarAutoPlay();
         });
     }
 
     if (nextBtn) {
         nextBtn.addEventListener('click', () => {
-            currentIndex = (currentIndex + 1) % totalEventos;
-            mudarHero(currentIndex);
+            heroCurrentIndex = (heroCurrentIndex + 1) % totalEventos;
+            mudarHero(heroCurrentIndex);
+            reiniciarAutoPlay();
         });
     }
 
-    // Auto-change a cada 8 segundos
-    setInterval(() => {
-        currentIndex = (currentIndex + 1) % totalEventos;
-        mudarHero(currentIndex);
-    }, 8000);
+    // Adicionar listener aos dots para reiniciar autoplay ao clicar
+    const dots = document.querySelectorAll('.hero-dot');
+    dots.forEach((dot, index) => {
+        const originalClickHandler = dot.onclick;
+        dot.addEventListener('click', () => {
+            reiniciarAutoPlay();
+        });
+    });
+
+    // Iniciar autoplay
+    startAutoPlay();
 }
 
 // Função para carregar grid de eventos
