@@ -1,8 +1,8 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="pt-br">
   <head>
     <meta charset="UTF-8" />
-    <title>TicketPrime</title>
+    <title>TicketPrime – Painel Admin</title>
     <link rel="stylesheet" href="../style.css" />
     <link
       href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css"
@@ -11,32 +11,13 @@
   </head>
 
   <body class="home-page">
-    <!-- ═══════════════ header ═══════════════ -->
-    <header class="site-navbar">
-      <div class="navbar-logo">
-        <img src="../imagens/logo.png" alt="Logo TicketPrime" class="logo-img" />
-        <span>TicketPrime</span>
-      </div>
-      <nav class="navbar-links">
-        <a href="./login.html" class="navbar-btn">Cadastro</a>
-        <a href="./login.html" class="navbar-btn">Login</a>
-        <a href="./admin.html" class="navbar-btn">Criar Evento</a>
-        <button
-          class="theme-toggle"
-          id="themeToggle"
-          type="button"
-          aria-label="Alternar tema"
-          aria-pressed="true"
-        >
-          <i class="bx bx-moon theme-toggle-icon" aria-hidden="true"></i>
-        </button>
-      </nav>
-    </header>
+    <script src="../js/components/header.js"></script>
+    <script src="../js/components/sidebar.js"></script>
 
     <!-- ═══════════════ main ═══════════════ -->
     <main class="site-main">
       <div class="welcome-content">
-        <h1>Bem-vindo ao TicketPrime</h1>
+        <h1>Bem-vindo ao Painel Admin</h1>
         <p>Gerencie seus eventos e venda ingressos de forma fácil e rápida.</p>
       </div>
 
@@ -57,39 +38,35 @@
 
           <div class="carousel-viewport">
             <div class="carousel-track">
-              <a href="./painel-ingressos.html" class="carousel-item" aria-label="Cupola Summit 2026">
+              <a href="./painel-ingressos.html" class="carousel-item" aria-label="Ana Vitoria – Tour Afeto">
                 <img src="../imagens/eventos/ana-tour.svg" alt="Ana Vitoria - Tour Afeto" class="card-image" />
                 <div class="carousel-meta">
                   <h3>Ana Vitoria - Tour Afeto</h3>
                   <p>12 de Abril • Rio de Janeiro</p>
                 </div>
               </a>
-
-              <a href="./painel-ingressos.html" class="carousel-item" aria-label="Festival da Serra">
+              <a href="./painel-ingressos.html" class="carousel-item" aria-label="Sons da Cidade">
                 <img src="../imagens/eventos/sons-cidade.svg" alt="Sons da Cidade" class="card-image" />
                 <div class="carousel-meta">
                   <h3>Sons da Cidade</h3>
                   <p>19 de Abril • Rio de Janeiro</p>
                 </div>
               </a>
-
-              <a href="./painel-ingressos.html" class="carousel-item" aria-label="Conexão Inovação">
+              <a href="./painel-ingressos.html" class="carousel-item" aria-label="Noite de Comédia Prime">
                 <img src="../imagens/eventos/comedia-prime.svg" alt="Noite de Comedia Prime" class="card-image" />
                 <div class="carousel-meta">
                   <h3>Noite de Comedia Prime</h3>
                   <p>27 de Abril • Rio de Janeiro</p>
                 </div>
               </a>
-
-              <a href="./painel-ingressos.html" class="carousel-item" aria-label="Noite Prime">
+              <a href="./painel-ingressos.html" class="carousel-item" aria-label="Luzes da Lapa">
                 <img src="../imagens/eventos/luzes-lapa.svg" alt="Luzes da Lapa" class="card-image" />
                 <div class="carousel-meta">
                   <h3>Luzes da Lapa</h3>
                   <p>03 de Maio • Rio de Janeiro</p>
                 </div>
               </a>
-
-              <a href="./painel-ingressos.html" class="carousel-item" aria-label="Summit de Negócios">
+              <a href="./painel-ingressos.html" class="carousel-item" aria-label="Encontro Prime de Negocios">
                 <img src="../imagens/evento-destaque.jpg" alt="Encontro Prime de Negocios" class="card-image" />
                 <div class="carousel-meta">
                   <h3>Encontro Prime de Negocios</h3>
@@ -107,6 +84,7 @@
         </div>
       </div>
     </main>
+
     <!-- ═══════════════ footer ═══════════════ -->
     <footer class="site-footer">
       <div class="footer-column">
@@ -126,28 +104,40 @@
         © 2026 TicketPrime Eventos. Todos os direitos reservados.
       </p>
     </footer>
-    <script>
-      (function enforceAdminRoute() {
-        let session;
 
+    <script>
+      (async function () {
+        const API_BASE_URL = (() => {
+          const configuredUrl = localStorage.getItem('API_URL');
+          if (configuredUrl) return configuredUrl.replace(/\/+$/, '');
+          if (window.location.hostname === 'localhost') return 'http://localhost:5129';
+          return 'https://devsmentais-ticketprime.up.railway.app';
+        })();
+
+        // Verificar sessão e papel antes de iniciar o shell
+        let session;
         try {
           session = JSON.parse(localStorage.getItem('ticketprimeUser') || 'null');
         } catch {
           session = null;
         }
 
-        function normalizeTipoConta(rawValue) {
-          const value = String(rawValue || '').trim().toLowerCase();
-          if (value === 'adm' || value === 'admin' || value === 'administrador') {
-            return 'adm';
-          }
-          return 'usuario';
+        function normalizeTipoConta(v) {
+          const s = String(v || '').trim().toLowerCase();
+          return (s === 'adm' || s === 'admin' || s === 'administrador') ? 'adm' : 'usuario';
         }
 
-        const tipoConta = normalizeTipoConta(session?.tipoConta ?? session?.TipoConta);
-        if (tipoConta !== 'adm') {
+        if (!session || typeof session !== 'object') {
           window.location.replace('./login.html');
+          return;
         }
+        if (normalizeTipoConta(session?.tipoConta ?? session?.TipoConta) !== 'adm') {
+          window.location.replace('./login.html');
+          return;
+        }
+
+        // Inicializar shell (header, sidebar, avatar, perfil, logout, configuracoes)
+        await initAppShell({ role: 'adm', apiBaseUrl: API_BASE_URL });
       })();
     </script>
     <script src="../js/theme-toggle.js"></script>

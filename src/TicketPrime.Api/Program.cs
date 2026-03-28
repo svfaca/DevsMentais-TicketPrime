@@ -6,12 +6,28 @@ using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var corsOrigins = (builder.Configuration["Cors:Origins"]
+    ?? Environment.GetEnvironmentVariable("CORS_ALLOWED_ORIGINS")
+    ?? "http://localhost:3000,http://localhost:5173")
+    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("Frontend", policy =>
+    options.AddPolicy("AllowFrontend", policy =>
     {
         policy
-            .AllowAnyOrigin()
+            .SetIsOriginAllowed(origin =>
+            {
+                if (string.IsNullOrWhiteSpace(origin)) return false;
+
+                if (corsOrigins.Contains(origin, StringComparer.OrdinalIgnoreCase))
+                    return true;
+
+                if (Uri.TryCreate(origin, UriKind.Absolute, out var uri))
+                    return uri.Host.EndsWith(".vercel.app", StringComparison.OrdinalIgnoreCase);
+
+                return false;
+            })
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
@@ -40,11 +56,11 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-app.UseCors("Frontend");
+app.UseCors("AllowFrontend");
 app.UseStaticFiles();
 
-var connectionString = builder.Configuration.GetConnectionString("NeonDB")
-    ?? throw new InvalidOperationException("Connection string 'NeonDB' nao encontrada. Configure em appsettings.json.");
+var connectionString = ResolveConnectionString(builder.Configuration)
+    ?? throw new InvalidOperationException("Connection string nao encontrada. Configure 'ConnectionStrings:DefaultConnection' ou 'DATABASE_URL'.");
 
 var tokenSecret = builder.Configuration["Auth:TokenSecret"] ?? "ticketprime-dev-token-secret-change-this";
 var bootstrapAdminKey = builder.Configuration["Auth:BootstrapAdminKey"] ?? "ticketprime-bootstrap-admin";
@@ -541,7 +557,15 @@ app.MapPost("/api/auth/login", async (LoginRequest request) =>
 .WithDescription("Realiza login com CPF/e-mail e senha")
 .Produces<LoginResponse>(200).Produces(401).Produces(400);
 
-app.Run();
+var port = Environment.GetEnvironmentVariable("PORT");
+if (!string.IsNullOrWhiteSpace(port))
+{
+    app.Run($"http://0.0.0.0:{port}");
+}
+else
+{
+    app.Run();
+}
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 
@@ -611,6 +635,77 @@ static string? NormalizeAccountType(string? value)
     if (string.IsNullOrWhiteSpace(value)) return null;
     var normalized = value.Trim().ToLowerInvariant();
     return normalized is "usuario" or "adm" ? normalized : null;
+}
+
+static string? ResolveConnectionString(IConfiguration configuration)
+{
+    var configured = configuration.GetConnectionString("DefaultConnection")
+        ?? configuration.GetConnectionString("NeonDB")
+        ?? Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+        ?? Environment.GetEnvironmentVariable("ConnectionStrings__NeonDB");
+
+    if (!string.IsNullOrWhiteSpace(configured))
+        return configured;
+
+    var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL")
+        ?? configuration["DATABASE_URL"];
+
+    return string.IsNullOrWhiteSpace(databaseUrl)
+        ? null
+        : BuildNpgsqlConnectionStringFromDatabaseUrl(databaseUrl);
+}
+
+static string BuildNpgsqlConnectionStringFromDatabaseUrl(string databaseUrl)
+{
+    if (!Uri.TryCreate(databaseUrl, UriKind.Absolute, out var uri))
+        throw new InvalidOperationException("DATABASE_URL invalida.");
+
+    if (!string.Equals(uri.Scheme, "postgresql", StringComparison.OrdinalIgnoreCase)
+        && !string.Equals(uri.Scheme, "postgres", StringComparison.OrdinalIgnoreCase))
+        throw new InvalidOperationException("DATABASE_URL deve usar esquema postgres/postgresql.");
+
+    var userInfo = uri.UserInfo.Split(':', 2, StringSplitOptions.None);
+    var username = userInfo.Length > 0 ? Uri.UnescapeDataString(userInfo[0]) : string.Empty;
+    var password = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : string.Empty;
+
+    var connectionBuilder = new NpgsqlConnectionStringBuilder
+    {
+        Host = uri.Host,
+        Port = uri.IsDefaultPort ? 5432 : uri.Port,
+        Database = uri.AbsolutePath.Trim('/'),
+        Username = username,
+        Password = password,
+        SslMode = SslMode.Require
+    };
+
+    var query = uri.Query.TrimStart('?');
+    if (!string.IsNullOrWhiteSpace(query))
+    {
+        foreach (var pair in query.Split('&', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            var kv = pair.Split('=', 2, StringSplitOptions.None);
+            if (kv.Length != 2) continue;
+
+            var key = kv[0].Trim().ToLowerInvariant();
+            var value = Uri.UnescapeDataString(kv[1]).Trim();
+
+            if (key == "sslmode")
+            {
+                connectionBuilder.SslMode = value.ToLowerInvariant() switch
+                {
+                    "disable" => SslMode.Disable,
+                    "allow" => SslMode.Allow,
+                    "prefer" => SslMode.Prefer,
+                    "require" => SslMode.Require,
+                    "verifyca" or "verify-ca" => SslMode.VerifyCA,
+                    "verifyfull" or "verify-full" => SslMode.VerifyFull,
+                    _ => SslMode.Require
+                };
+            }
+        }
+    }
+
+    return connectionBuilder.ConnectionString;
 }
 
 static string ComputeSha256(string input)

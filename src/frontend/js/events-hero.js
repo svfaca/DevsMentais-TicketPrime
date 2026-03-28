@@ -1,6 +1,16 @@
 // Dados dos eventos (carregados da API)
 let EVENTS_DATA = [];
 
+const FRONTEND_BASE_URL = (() => {
+    const scriptSrc = document.currentScript?.src;
+    if (scriptSrc) {
+        return scriptSrc.replace(/\/js\/events-hero\.js.*$/, '');
+    }
+
+    const currentPath = window.location.pathname.replace(/\/[^/]*$/, '');
+    return `${window.location.origin}${currentPath.replace(/\/paginas$/, '')}`;
+})();
+
 // Base URL do backend (API + arquivos estaticos)
 const API_BASE_URL = (() => {
     const configuredUrl = localStorage.getItem('API_URL');
@@ -8,12 +18,11 @@ const API_BASE_URL = (() => {
         return configuredUrl.replace(/\/+$/, '');
     }
 
-    if (window.location.port === '3000') {
+    if (window.location.hostname === 'localhost') {
         return 'http://localhost:5129';
     }
 
-    const origin = window.location.origin;
-    return (origin && origin !== 'null') ? origin : 'http://localhost:5129';
+    return 'https://devsmentais-ticketprime.up.railway.app';
 })();
 const API_URL = `${API_BASE_URL}/api/eventos/publico`;
 
@@ -337,7 +346,7 @@ function carregarHero() {
                 // Botão "Comprar Ingressos" dos eventos
                 if (botaoPrimario.textContent.includes('Comprar Ingressos')) {
                     botaoPrimario.addEventListener('click', () => {
-                        window.location.href = `./paginas/painel-ingressos.html?id=${evento.id}`;
+                        window.location.href = `${FRONTEND_BASE_URL}/paginas/painel-ingressos.html?id=${evento.id}`;
                     });
                 }
             }
@@ -466,7 +475,7 @@ function carregarGridEventos() {
 
     eventos.forEach((evento) => {
         const card = document.createElement('a');
-        card.href = `./paginas/painel-ingressos.html?id=${evento.id}`;
+        card.href = `${FRONTEND_BASE_URL}/paginas/painel-ingressos.html?id=${evento.id}`;
         card.className = 'event-card';
 
         card.innerHTML = `

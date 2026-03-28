@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="pt-br">
   <head>
     <meta charset="UTF-8" />
@@ -11,116 +11,8 @@
   </head>
 
   <body class="home-page">
-    <!-- ═══════════════ header ═══════════════ -->
-    <header class="site-navbar">
-      <div class="navbar-logo">
-        <img src="../imagens/logo.png" alt="Logo TicketPrime" class="logo-img" />
-        <span>TicketPrime</span>
-      </div>
-      <img
-        id="menuToggle"
-        class="menu-toggle profile-avatar-button"
-        src=""
-        alt="Abrir menu lateral"
-        aria-label="Abrir menu lateral"
-        aria-controls="userSidebar"
-        aria-expanded="false"
-        role="button"
-        tabindex="0"
-      />
-    </header>
-
-    <button
-      class="sidebar-backdrop"
-      id="sidebarBackdrop"
-      type="button"
-      aria-label="Fechar menu lateral"
-    ></button>
-
-    <aside class="user-sidebar" id="userSidebar" aria-hidden="true">
-      <div class="user-sidebar-header">
-        <h2>Minha Conta</h2>
-        <button class="menu-close" id="menuClose" type="button" aria-label="Fechar menu lateral">
-          <i class="bx bx-x"></i>
-        </button>
-      </div>
-
-      <div class="user-profile-card">
-        <div class="profile-avatar" id="profileAvatar" aria-label="Foto de perfil">
-          <img id="profileAvatarImage" alt="Foto de perfil" hidden />
-          <i class="bx bx-user" id="profileAvatarFallback"></i>
-        </div>
-        <h3 id="profileName">Usuario TicketPrime</h3>
-        <p id="profileEmail">usuario@ticketprime.com.br</p>
-      </div>
-
-      <nav class="user-sidebar-nav" aria-label="Opcoes da conta">
-        <a href="./meus-ingressos.html" class="user-sidebar-link">
-          <i class="bx bx-ticket"></i>
-          <span>Meus ingressos</span>
-        </a>
-
-        <button class="user-sidebar-link" id="createEventButton" type="button">
-          <i class="bx bx-calendar-plus"></i>
-          <span>Criar evento</span>
-        </button>
-
-        <button class="user-sidebar-link" type="button" data-open-settings="true">
-          <i class="bx bx-cog"></i>
-          <span>Configuracoes</span>
-        </button>
-      </nav>
-
-      <button class="sidebar-logout" id="logoutButton" type="button">
-        <i class="bx bx-log-out"></i>
-        <span>Sair</span>
-      </button>
-    </aside>
-
-    <section class="profile-settings-modal" id="profileSettingsModal" hidden>
-      <div class="profile-settings-dialog" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
-        <div class="profile-settings-head">
-          <h2 id="settingsTitle">Configuracoes da conta</h2>
-          <button class="settings-close" id="settingsClose" type="button" aria-label="Fechar configuracoes">
-            <i class="bx bx-x"></i>
-          </button>
-        </div>
-
-        <form id="profileSettingsForm" class="profile-settings-form">
-          <div class="settings-photo-row">
-            <div class="settings-photo-current" aria-label="Foto atual do usuario">
-              <img id="settingsPhotoPreviewImage" alt="Foto atual do usuario" hidden />
-              <i class="bx bx-user" id="settingsPhotoPreviewFallback"></i>
-            </div>
-
-            <div class="settings-photo-actions">
-              <p>Foto atual do perfil</p>
-              <label for="settingsPhoto" class="settings-photo-button">Alterar foto</label>
-              <input
-                id="settingsPhoto"
-                name="settingsPhoto"
-                type="file"
-                accept="image/*"
-                class="settings-photo-input"
-              />
-              <span class="profile-photo-help">Escolha uma imagem para atualizar sua foto.</span>
-            </div>
-          </div>
-
-          <label for="settingsName">Nome</label>
-          <input id="settingsName" name="settingsName" type="text" placeholder="Seu nome" />
-
-          <label for="settingsEmail">Email</label>
-          <input id="settingsEmail" name="settingsEmail" type="email" placeholder="email@exemplo.com" />
-
-          <label for="settingsPhone">Telefone</label>
-          <input id="settingsPhone" name="settingsPhone" type="text" placeholder="(11) 99999-9999" />
-
-          <button class="btn" id="settingsSaveButton" type="submit" disabled>Salvar alteracoes</button>
-          <button class="btn btn-danger" id="deleteAccountButton" type="button">Excluir conta</button>
-        </form>
-      </div>
-    </section>
+    <script src="../js/components/header.js"></script>
+    <script src="../js/components/sidebar.js"></script>
 
     <!-- ═══════════════ main ═══════════════ -->
     <main class="site-main">
@@ -129,23 +21,19 @@
         <div class="hero-container" id="hero-container">
           <!-- Hero dinâmico gerado pelo JS -->
         </div>
-        <!-- Navegação do hero -->
         <button class="hero-control hero-prev" type="button" aria-label="Evento anterior">
           <i class="bx bx-chevron-left"></i>
         </button>
         <button class="hero-control hero-next" type="button" aria-label="Próximo evento">
           <i class="bx bx-chevron-right"></i>
         </button>
-        <!-- Indicadores -->
         <div class="hero-dots" id="hero-dots" aria-label="Indicadores de eventos"></div>
       </section>
 
       <!-- ═══════════════ events grid section ═══════════════ -->
       <section class="events-grid-section">
         <h2 class="section-title">Próximos Eventos</h2>
-        <div class="events-grid" id="events-grid">
-          <!-- eventos carregados dinamicamente -->
-        </div>
+        <div class="events-grid" id="events-grid"></div>
       </section>
 
       <!-- ═══════════════ meus ingressos section ═══════════════ -->
@@ -154,14 +42,13 @@
           <h2 class="section-title">Meus ingressos</h2>
           <a href="./painel-ingressos.html" class="my-tickets-link">Ver mais eventos</a>
         </div>
-
         <div class="my-tickets-grid" id="myTicketsGrid"></div>
-
         <p class="my-tickets-empty" id="myTicketsEmpty" hidden>
           Voce ainda nao se inscreveu em eventos.
         </p>
       </section>
     </main>
+
     <!-- ═══════════════ footer ═══════════════ -->
     <footer class="site-footer">
       <div class="footer-column">
@@ -181,680 +68,108 @@
         © 2026 TicketPrime Eventos. Todos os direitos reservados.
       </p>
     </footer>
-    <script>
-      (async function enforceUserRoute() {
-        let session;
 
+    <script>
+      (async function () {
+        const API_BASE_URL = (() => {
+          const configuredUrl = localStorage.getItem('API_URL');
+          if (configuredUrl) return configuredUrl.replace(/\/+$/, '');
+          if (window.location.hostname === 'localhost') return 'http://localhost:5129';
+          return 'https://devsmentais-ticketprime.up.railway.app';
+        })();
+
+        document.body.style.setProperty('--fundo-url', `url('${API_BASE_URL}/imagens/fundo.jpg')`);
+
+        // Verificar sessão e papel antes de iniciar o shell
+        let session;
         try {
           session = JSON.parse(localStorage.getItem('ticketprimeUser') || 'null');
         } catch {
           session = null;
         }
 
-        function normalizeTipoConta(rawValue) {
-          const value = String(rawValue || '').trim().toLowerCase();
-          if (value === 'adm' || value === 'admin' || value === 'administrador') {
-            return 'adm';
-          }
-          return 'usuario';
+        function normalizeTipoConta(v) {
+          const s = String(v || '').trim().toLowerCase();
+          return (s === 'adm' || s === 'admin' || s === 'administrador') ? 'adm' : 'usuario';
         }
 
         if (!session || typeof session !== 'object') {
           window.location.replace('./login.html');
           return;
         }
-
-        const tipoConta = normalizeTipoConta(session?.tipoConta ?? session?.TipoConta);
-        if (tipoConta !== 'usuario') {
+        if (normalizeTipoConta(session?.tipoConta ?? session?.TipoConta) !== 'usuario') {
           window.location.replace('./login.html');
           return;
         }
 
-        const API_BASE_URL = (() => {
-          const configuredUrl = localStorage.getItem('API_URL');
-          if (configuredUrl) {
-            return configuredUrl.replace(/\/+$/, '');
-          }
+        // Inicializar shell (header, sidebar, avatar, perfil, logout, configuracoes)
+        const shell = await initAppShell({ role: 'usuario', apiBaseUrl: API_BASE_URL });
+        if (!shell) return;
 
-          if (window.location.port === '3000') {
-            return 'http://localhost:5129';
-          }
+        loadMyTickets(shell);
+      })();
 
-          const origin = window.location.origin;
-          return (origin && origin !== 'null') ? origin : 'http://localhost:5129';
-        })();
+      // ── Carregar ingressos do usuário ──────────────────────────────────────────
 
-        // Injeta URL do fundo.jpg apontando para a API correta (usado pelo light-mode no CSS)
-        document.body.style.setProperty('--fundo-url', `url('${API_BASE_URL}/imagens/fundo.jpg')`);
+      function normalizeTicketFromSource(rawTicket) {
+        if (!rawTicket || typeof rawTicket !== 'object') return null;
+        const nome = String(rawTicket.nomeEvento ?? rawTicket.nome ?? rawTicket.evento ?? rawTicket.titulo ?? '').trim();
+        const data = String(rawTicket.dataEvento ?? rawTicket.data ?? rawTicket.date ?? '').trim();
+        const local = String(rawTicket.localEvento ?? rawTicket.local ?? rawTicket.cidade ?? '').trim();
+        const imagem = String(rawTicket.imagemEvento ?? rawTicket.imagem ?? rawTicket.foto ?? '../imagens/eventos/ana-tour.svg').trim();
+        return nome ? { nome, data, local, imagem } : null;
+      }
 
-        const body = document.body;
-        const sidebar = document.getElementById('userSidebar');
-        const backdrop = document.getElementById('sidebarBackdrop');
-        const menuToggle = document.getElementById('menuToggle');
-        const menuClose = document.getElementById('menuClose');
-        const createEventButton = document.getElementById('createEventButton');
-        const profileName = document.getElementById('profileName');
-        const profileEmail = document.getElementById('profileEmail');
-        const profileAvatarImage = document.getElementById('profileAvatarImage');
-        const profileAvatarFallback = document.getElementById('profileAvatarFallback');
-        const settingsModal = document.getElementById('profileSettingsModal');
-        const settingsClose = document.getElementById('settingsClose');
-        const settingsForm = document.getElementById('profileSettingsForm');
-        const settingsSaveButton = document.getElementById('settingsSaveButton');
-        const logoutButton = document.getElementById('logoutButton');
-        const settingsNameInput = document.getElementById('settingsName');
-        const settingsEmailInput = document.getElementById('settingsEmail');
-        const settingsPhoneInput = document.getElementById('settingsPhone');
-        const settingsPhotoInput = document.getElementById('settingsPhoto');
-        const settingsPhotoPreviewImage = document.getElementById('settingsPhotoPreviewImage');
-        const settingsPhotoPreviewFallback = document.getElementById('settingsPhotoPreviewFallback');
-        const deleteAccountButton = document.getElementById('deleteAccountButton');
+      function normalizeTicketsList(rawList) {
+        if (!Array.isArray(rawList)) return [];
+        return rawList.map(normalizeTicketFromSource).filter(Boolean);
+      }
+
+      function renderMyTickets(tickets) {
         const myTicketsGrid = document.getElementById('myTicketsGrid');
         const myTicketsEmpty = document.getElementById('myTicketsEmpty');
-        const openSettingsButtons = document.querySelectorAll('[data-open-settings="true"]');
-        let selectedProfilePhoto = '';
-        let selectedProfilePhotoFile = null;
-        let photoPreviewObjectUrl = '';
-        let initialProfileState = {
-          nome: '',
-          email: '',
-          telefone: '',
-          fotoPerfil: ''
-        };
+        if (!myTicketsGrid || !myTicketsEmpty) return;
 
-        function getToken() {
-          return String(session?.token ?? session?.Token ?? '').trim();
+        myTicketsGrid.innerHTML = '';
+        if (!tickets.length) { myTicketsEmpty.hidden = false; return; }
+        myTicketsEmpty.hidden = true;
+
+        const fragment = document.createDocumentFragment();
+        for (const ticket of tickets) {
+          const card = document.createElement('a');
+          card.className = 'my-ticket-card';
+          card.href = './painel-ingressos.html';
+          card.setAttribute('aria-label', ticket.nome);
+          card.innerHTML = `
+            <img class="my-ticket-image" src="${ticket.imagem}" alt="${ticket.nome}" />
+            <div class="my-ticket-meta">
+              <h3>${ticket.nome}</h3>
+              <p>${ticket.data || 'Data a confirmar'}${ticket.local ? ` &bull; ${ticket.local}` : ''}</p>
+            </div>
+          `;
+          fragment.appendChild(card);
         }
+        myTicketsGrid.appendChild(fragment);
+      }
 
-        function authHeaders() {
-          const token = getToken();
-          return token ? { Authorization: `Bearer ${token}` } : {};
+      async function loadMyTickets({ session, getAuthHeaders, apiBaseUrl }) {
+        let tickets = [];
+        try {
+          const res = await fetch(`${apiBaseUrl}/api/reservas`, { headers: getAuthHeaders() });
+          if (res.ok) {
+            const payload = await res.json().catch(() => []);
+            tickets = normalizeTicketsList(Array.isArray(payload) ? payload : payload?.itens);
+          }
+        } catch { tickets = []; }
+
+        if (!tickets.length) {
+          try { tickets = normalizeTicketsList(JSON.parse(localStorage.getItem('ticketprimeUserTickets') || '[]')); } catch { }
         }
-
-        function persistSession() {
-          localStorage.setItem('ticketprimeUser', JSON.stringify(session));
+        if (!tickets.length) {
+          tickets = normalizeTicketsList(session?.ingressos ?? session?.Ingressos ?? session?.eventosInscritos);
         }
-
-        function syncSessionProfilePhoto(photoUrl) {
-          const normalizedPhotoUrl = String(photoUrl || '').trim();
-          selectedProfilePhoto = normalizedPhotoUrl;
-          session.fotoPerfil = normalizedPhotoUrl;
-          persistSession();
-          updateAvatar(normalizedPhotoUrl, { forceRefresh: true });
-        }
-
-        function getCurrentProfileState() {
-          return {
-            nome: settingsNameInput.value.trim(),
-            email: settingsEmailInput.value.trim(),
-            telefone: settingsPhoneInput.value.trim(),
-            fotoPerfil: String(selectedProfilePhoto || '').trim()
-          };
-        }
-
-        function hasProfileChanges() {
-          const current = getCurrentProfileState();
-          return (
-            current.nome !== initialProfileState.nome ||
-            current.email !== initialProfileState.email ||
-            current.telefone !== initialProfileState.telefone ||
-            current.fotoPerfil !== initialProfileState.fotoPerfil ||
-            selectedProfilePhotoFile !== null
-          );
-        }
-
-        function updateSaveButtonState() {
-          settingsSaveButton.disabled = !hasProfileChanges();
-        }
-
-        function normalizeTicketFromSource(rawTicket) {
-          if (!rawTicket || typeof rawTicket !== 'object') {
-            return null;
-          }
-
-          const nome = String(
-            rawTicket.nomeEvento ?? rawTicket.nome ?? rawTicket.evento ?? rawTicket.titulo ?? ''
-          ).trim();
-          const data = String(rawTicket.dataEvento ?? rawTicket.data ?? rawTicket.date ?? '').trim();
-          const local = String(rawTicket.localEvento ?? rawTicket.local ?? rawTicket.cidade ?? '').trim();
-          const imagem = String(
-            rawTicket.imagemEvento ?? rawTicket.imagem ?? rawTicket.foto ?? '../imagens/eventos/ana-tour.svg'
-          ).trim();
-
-          if (!nome) {
-            return null;
-          }
-
-          return { nome, data, local, imagem };
-        }
-
-        function normalizeTicketsList(rawList) {
-          if (!Array.isArray(rawList)) {
-            return [];
-          }
-
-          return rawList
-            .map(normalizeTicketFromSource)
-            .filter((ticket) => Boolean(ticket));
-        }
-
-        function renderMyTickets(tickets) {
-          if (!myTicketsGrid || !myTicketsEmpty) {
-            return;
-          }
-
-          myTicketsGrid.innerHTML = '';
-
-          if (!tickets.length) {
-            myTicketsEmpty.hidden = false;
-            return;
-          }
-
-          myTicketsEmpty.hidden = true;
-
-          const fragment = document.createDocumentFragment();
-
-          for (const ticket of tickets) {
-            const card = document.createElement('a');
-            card.className = 'my-ticket-card';
-            card.href = './painel-ingressos.html';
-            card.setAttribute('aria-label', ticket.nome);
-
-            card.innerHTML = `
-              <img class="my-ticket-image" src="${ticket.imagem}" alt="${ticket.nome}" />
-              <div class="my-ticket-meta">
-                <h3>${ticket.nome}</h3>
-                <p>${ticket.data || 'Data a confirmar'}${ticket.local ? ` • ${ticket.local}` : ''}</p>
-              </div>
-            `;
-
-            fragment.appendChild(card);
-          }
-
-          myTicketsGrid.appendChild(fragment);
-        }
-
-        async function loadMyTickets() {
-          let tickets = [];
-
-          try {
-            const response = await fetch(`${API_BASE_URL}/api/reservas`, {
-              headers: {
-                ...authHeaders()
-              }
-            });
-
-            if (response.ok) {
-              const payload = await response.json().catch(() => []);
-              const apiList = Array.isArray(payload) ? payload : payload?.itens;
-              tickets = normalizeTicketsList(apiList);
-            }
-          } catch {
-            tickets = [];
-          }
-
-          if (!tickets.length) {
-            let localTickets = [];
-
-            try {
-              localTickets = JSON.parse(localStorage.getItem('ticketprimeUserTickets') || '[]');
-            } catch {
-              localTickets = [];
-            }
-
-            tickets = normalizeTicketsList(localTickets);
-          }
-
-          if (!tickets.length) {
-            const sessionTickets = session?.ingressos ?? session?.Ingressos ?? session?.eventosInscritos;
-            tickets = normalizeTicketsList(sessionTickets);
-          }
-
-          renderMyTickets(tickets);
-        }
-
-        function getUserValue(keys, fallbackValue) {
-          for (const key of keys) {
-            const value = session?.[key];
-            if (value !== undefined && value !== null && String(value).trim() !== '') {
-              return String(value).trim();
-            }
-          }
-          return fallbackValue;
-        }
-
-        function addCacheBust(url) {
-          if (!url || url.startsWith('blob:') || url.startsWith('data:')) {
-            return url;
-          }
-
-          const [withoutHash, hashFragment = ''] = String(url).split('#');
-          const separator = withoutHash.includes('?') ? '&' : '?';
-          return `${withoutHash}${separator}t=${Date.now()}${hashFragment ? `#${hashFragment}` : ''}`;
-        }
-
-        function getDefaultHeaderAvatar() {
-          return "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23242323'/%3E%3Ccircle cx='50' cy='37' r='20' fill='%23f2f2f2'/%3E%3Cpath d='M16 92c5-18 19-30 34-30s29 12 34 30' fill='%23f2f2f2'/%3E%3C/svg%3E";
-        }
-
-        function renderHeaderAvatar(photoUrl, options = {}) {
-          const { forceRefresh = false } = options;
-          const fullUrl = photoUrl && photoUrl.startsWith('/')
-            ? API_BASE_URL + photoUrl
-            : photoUrl;
-          const renderedUrl = forceRefresh ? addCacheBust(fullUrl) : fullUrl;
-
-          menuToggle.onerror = () => {
-            menuToggle.onerror = null;
-            menuToggle.src = getDefaultHeaderAvatar();
-          };
-
-          menuToggle.src = renderedUrl || getDefaultHeaderAvatar();
-        }
-
-        function updateAvatar(photoUrl, options = {}) {
-          const { forceRefresh = false } = options;
-          const fullUrl = photoUrl && photoUrl.startsWith('/')
-            ? API_BASE_URL + photoUrl
-            : photoUrl;
-          const renderedUrl = forceRefresh ? addCacheBust(fullUrl) : fullUrl;
-
-          if (renderedUrl) {
-            profileAvatarImage.onerror = () => {
-              profileAvatarImage.hidden = true;
-              profileAvatarFallback.hidden = false;
-            };
-            profileAvatarImage.src = renderedUrl;
-            profileAvatarImage.hidden = false;
-            profileAvatarFallback.hidden = true;
-
-            settingsPhotoPreviewImage.onerror = () => {
-              settingsPhotoPreviewImage.hidden = true;
-              settingsPhotoPreviewFallback.hidden = false;
-            };
-            settingsPhotoPreviewImage.src = renderedUrl;
-            settingsPhotoPreviewImage.hidden = false;
-            settingsPhotoPreviewFallback.hidden = true;
-            renderHeaderAvatar(photoUrl, { forceRefresh });
-            return;
-          }
-
-          profileAvatarImage.hidden = true;
-          profileAvatarImage.removeAttribute('src');
-          profileAvatarFallback.hidden = false;
-
-          settingsPhotoPreviewImage.hidden = true;
-          settingsPhotoPreviewImage.removeAttribute('src');
-          settingsPhotoPreviewFallback.hidden = false;
-          renderHeaderAvatar('', { forceRefresh: false });
-        }
-
-        function refreshProfileInfo() {
-          const nome = getUserValue(['nome', 'Nome', 'name', 'Name'], 'Usuario TicketPrime');
-          const email = getUserValue(['email', 'Email'], 'usuario@ticketprime.com.br');
-          const telefone = getUserValue(['telefone', 'Telefone', 'phone', 'Phone'], '');
-          const foto = getUserValue(
-            ['fotoPerfil', 'FotoPerfil', 'foto', 'Foto', 'avatar', 'Avatar', 'profileImage'],
-            ''
-          );
-
-          profileName.textContent = nome;
-          profileEmail.textContent = email;
-          updateAvatar(foto, { forceRefresh: true });
-
-          settingsNameInput.value = nome;
-          settingsEmailInput.value = email;
-          settingsPhoneInput.value = telefone;
-          selectedProfilePhoto = foto;
-          selectedProfilePhotoFile = null;
-          if (photoPreviewObjectUrl) {
-            URL.revokeObjectURL(photoPreviewObjectUrl);
-            photoPreviewObjectUrl = '';
-          }
-          settingsPhotoInput.value = '';
-
-          initialProfileState = {
-            nome: settingsNameInput.value.trim(),
-            email: settingsEmailInput.value.trim(),
-            telefone: settingsPhoneInput.value.trim(),
-            fotoPerfil: String(selectedProfilePhoto || '').trim()
-          };
-          updateSaveButtonState();
-        }
-
-        function openSidebar() {
-          body.classList.add('sidebar-open');
-          sidebar.setAttribute('aria-hidden', 'false');
-          menuToggle.setAttribute('aria-expanded', 'true');
-        }
-
-        function closeSidebar() {
-          body.classList.remove('sidebar-open');
-          sidebar.setAttribute('aria-hidden', 'true');
-          menuToggle.setAttribute('aria-expanded', 'false');
-        }
-
-        function openSettings() {
-          settingsModal.hidden = false;
-          body.classList.add('settings-open');
-          window.setTimeout(() => {
-            settingsNameInput.focus();
-          }, 20);
-        }
-
-        function closeSettings() {
-          settingsModal.hidden = true;
-          body.classList.remove('settings-open');
-        }
-
-        menuToggle.addEventListener('click', openSidebar);
-        menuToggle.addEventListener('keydown', (event) => {
-          if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault();
-            openSidebar();
-          }
-        });
-        menuClose.addEventListener('click', closeSidebar);
-        backdrop.addEventListener('click', closeSidebar);
-
-        for (const button of openSettingsButtons) {
-          button.addEventListener('click', () => {
-            closeSidebar();
-            openSettings();
-          });
-        }
-
-        settingsNameInput.addEventListener('input', updateSaveButtonState);
-        settingsEmailInput.addEventListener('input', updateSaveButtonState);
-        settingsPhoneInput.addEventListener('input', updateSaveButtonState);
-
-        settingsPhotoInput.addEventListener('change', () => {
-          const [file] = settingsPhotoInput.files || [];
-          if (!file) {
-            selectedProfilePhotoFile = null;
-            if (photoPreviewObjectUrl) {
-              URL.revokeObjectURL(photoPreviewObjectUrl);
-              photoPreviewObjectUrl = '';
-            }
-            updateAvatar(selectedProfilePhoto);
-            updateSaveButtonState();
-            return;
-          }
-
-          if (!file.type.startsWith('image/')) {
-            alert('Selecione um arquivo de imagem valido.');
-            settingsPhotoInput.value = '';
-            selectedProfilePhotoFile = null;
-            updateAvatar(selectedProfilePhoto);
-            updateSaveButtonState();
-            return;
-          }
-
-          selectedProfilePhotoFile = file;
-          if (photoPreviewObjectUrl) {
-            URL.revokeObjectURL(photoPreviewObjectUrl);
-          }
-
-          photoPreviewObjectUrl = URL.createObjectURL(file);
-          settingsPhotoPreviewImage.src = photoPreviewObjectUrl;
-          settingsPhotoPreviewImage.hidden = false;
-          settingsPhotoPreviewFallback.hidden = true;
-          updateSaveButtonState();
-        });
-
-        settingsClose.addEventListener('click', closeSettings);
-        settingsModal.addEventListener('click', (event) => {
-          if (event.target === settingsModal) {
-            closeSettings();
-          }
-        });
-
-        settingsForm.addEventListener('submit', async (event) => {
-          event.preventDefault();
-
-          if (!hasProfileChanges()) {
-            return;
-          }
-
-          const nome = settingsNameInput.value.trim();
-          const email = settingsEmailInput.value.trim();
-          const telefone = settingsPhoneInput.value.trim();
-          let fotoPerfil = selectedProfilePhoto;
-
-          if (!nome || !email) {
-            alert('Nome e email sao obrigatorios.');
-            return;
-          }
-
-          settingsSaveButton.disabled = true;
-          settingsSaveButton.textContent = 'Salvando...';
-
-          try {
-            if (selectedProfilePhotoFile) {
-              const formData = new FormData();
-              formData.append('file', selectedProfilePhotoFile);
-
-              const photoResponse = await fetch(`${API_BASE_URL}/api/me/foto`, {
-                method: 'POST',
-                headers: { ...authHeaders() },
-                body: formData
-              });
-
-              console.log('[perfil] POST /api/me/foto', photoResponse.status);
-
-              if (!photoResponse.ok) {
-                const payload = await photoResponse.json().catch(() => ({}));
-                const errorMessage =
-                  typeof payload === 'string' ? payload : payload?.mensagem || 'Erro ao enviar foto. Tente novamente.';
-                alert(errorMessage);
-                updateSaveButtonState();
-                settingsSaveButton.textContent = 'Salvar alteracoes';
-                return;
-              }
-
-              const photoData = await photoResponse.json();
-              fotoPerfil = String(photoData?.url || '').trim();
-              syncSessionProfilePhoto(fotoPerfil);
-              selectedProfilePhotoFile = null;
-              settingsPhotoInput.value = '';
-              if (photoPreviewObjectUrl) {
-                URL.revokeObjectURL(photoPreviewObjectUrl);
-                photoPreviewObjectUrl = '';
-              }
-            }
-
-            const perfilPayload = {
-              nome,
-              email,
-              telefone,
-              ...(fotoPerfil ? { fotoPerfil } : {})
-            };
-
-            const response = await fetch(`${API_BASE_URL}/api/me`, {
-              method: 'PUT',
-              headers: {
-                'Content-Type': 'application/json',
-                ...authHeaders()
-              },
-              body: JSON.stringify(perfilPayload)
-            });
-
-            console.log('[perfil] PUT /api/me', response.status);
-
-            if (!response.ok) {
-              const payload = await response.json().catch(() => ({}));
-              const errorMessage =
-                typeof payload === 'string' ? payload : payload?.mensagem || 'Nao foi possivel salvar as configuracoes.';
-              alert(errorMessage);
-              updateSaveButtonState();
-              settingsSaveButton.textContent = 'Salvar alteracoes';
-              return;
-            }
-
-            session.nome = nome;
-            session.email = email;
-            session.telefone = telefone;
-            session.fotoPerfil = fotoPerfil;
-            session.tipoConta = 'usuario';
-            persistSession();
-
-            refreshProfileInfo();
-            persistSession();
-            closeSettings();
-            closeSidebar();
-            alert('Configuracoes salvas com sucesso.');
-          } catch (error) {
-            console.error('[perfil] erro ao salvar', error);
-            alert('Nao foi possivel conectar com a API para salvar seu perfil.');
-            updateSaveButtonState();
-            settingsSaveButton.textContent = 'Salvar alteracoes';
-            return;
-          }
-
-          settingsSaveButton.textContent = 'Salvar alteracoes';
-        });
-
-        createEventButton.addEventListener('click', async () => {
-          const confirmacao = window.confirm(
-            'Sua conta esta prestes a se tornar uma conta adm. Deseja continuar?'
-          );
-
-          if (!confirmacao) {
-            return;
-          }
-
-          try {
-            const response = await fetch(`${API_BASE_URL}/api/me/promover-admin`, {
-              method: 'POST',
-              headers: {
-                ...authHeaders()
-              }
-            });
-
-            if (!response.ok) {
-              const payload = await response.json().catch(() => ({}));
-              const errorMessage =
-                typeof payload === 'string' ? payload : payload?.mensagem || 'Nao foi possivel promover sua conta.';
-              alert(errorMessage);
-              return;
-            }
-
-            const upgradedSession = await response.json();
-            session = {
-              ...session,
-              ...upgradedSession,
-              tipoConta: 'adm',
-              token: upgradedSession?.token ?? upgradedSession?.Token ?? session?.token
-            };
-            persistSession();
-
-            alert('Conta promovida para administrador com sucesso.');
-            window.location.replace('./Homeauthadm.html');
-          } catch {
-            alert('Nao foi possivel conectar com a API para promover sua conta.');
-          }
-        });
-
-        deleteAccountButton.addEventListener('click', async () => {
-          const confirmed = window.confirm(
-            'Tem certeza que deseja excluir sua conta? Esta acao nao pode ser desfeita.'
-          );
-
-          if (!confirmed) {
-            return;
-          }
-
-          try {
-            const response = await fetch(`${API_BASE_URL}/api/me`, {
-              method: 'DELETE',
-              headers: {
-                ...authHeaders()
-              }
-            });
-
-            if (!response.ok) {
-              const payload = await response.json().catch(() => ({}));
-              const errorMessage =
-                typeof payload === 'string' ? payload : payload?.mensagem || 'Nao foi possivel excluir sua conta.';
-              alert(errorMessage);
-              return;
-            }
-
-            localStorage.removeItem('ticketprimeUser');
-            alert('Conta excluida com sucesso.');
-            window.location.replace('./login.html');
-          } catch {
-            alert('Nao foi possivel conectar com a API para excluir sua conta.');
-          }
-        });
-
-        logoutButton.addEventListener('click', () => {
-          localStorage.removeItem('ticketprimeUser');
-          window.location.replace('../index.html');
-        });
-
-        document.addEventListener('keydown', (event) => {
-          if (event.key === 'Escape') {
-            closeSettings();
-            closeSidebar();
-          }
-        });
-
-        // Função para sincronizar dados do banco com a sessão
-        async function syncUserDataFromBank() {
-          try {
-            const token = getToken();
-            if (!token) {
-              console.log('ℹ️ Sem token, usando dados do localStorage');
-              return;
-            }
-
-            console.log('🔄 Sincronizando dados do usuário do banco...');
-            const response = await fetch(`${API_BASE_URL}/api/me`, {
-              method: 'GET',
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`
-              }
-            });
-
-            if (response.ok) {
-              const userData = await response.json();
-              console.log('✅ Dados do banco recebidos:', userData);
-              
-              const bankFotoPerfil = String(userData.fotoPerfil ?? userData.FotoPerfil ?? '').trim();
-
-              // Atualizar session com dados do banco sem apagar foto local quando a API nao traz foto valida.
-              session = {
-                ...session,
-                nome: userData.nome ?? userData.Nome ?? session?.nome,
-                email: userData.email ?? userData.Email ?? session?.email,
-                telefone: userData.telefone ?? userData.Telefone ?? session?.telefone,
-                fotoPerfil: bankFotoPerfil || session?.fotoPerfil
-              };
-              
-              // Salvar no localStorage
-              persistSession();
-              console.log('💾 Session atualizada e salva');
-            } else {
-              console.warn('⚠️ Não foi possível buscar dados do banco:', response.status);
-            }
-          } catch (error) {
-            console.error('❌ Erro ao sincronizar dados do banco:', error);
-          }
-        }
-
-        const updatedTipoConta = normalizeTipoConta(session?.tipoConta ?? session?.TipoConta);
-        if (updatedTipoConta === 'adm') {
-          window.location.replace('./Homeauthadm.html');
-          return;
-        }
-
-        // Sincronizar dados do banco ANTES de exibir
-        await syncUserDataFromBank();
-        refreshProfileInfo();
-        loadMyTickets();
-      })();
+        renderMyTickets(tickets);
+      }
     </script>
     <script src="../js/events-hero.js"></script>
   </body>

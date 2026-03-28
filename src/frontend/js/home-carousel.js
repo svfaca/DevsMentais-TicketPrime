@@ -1,4 +1,9 @@
-const API_BASE = 'http://localhost:5129';
+const API_BASE = (() => {
+  const configuredUrl = localStorage.getItem('API_URL');
+  if (configuredUrl) return configuredUrl.replace(/\/+$/, '');
+  if (window.location.hostname === 'localhost') return 'http://localhost:5129';
+  return 'https://devsmentais-ticketprime.up.railway.app';
+})();
 
 // Caminho relativo ao diretório do script (funciona de index.html e paginas/*.html)
 const _scriptDir = document.currentScript
@@ -34,7 +39,7 @@ async function carregarEventos() {
     track.innerHTML = '';
     eventos.forEach((evento, index) => {
       const imagem = IMAGENS_EVENTOS[index % IMAGENS_EVENTOS.length];
-      // Link relativo ao diretório do script (paginas/painel-ingressos.html)
+      // Link relativo ao diretório do script (paginas/html)
       const item = document.createElement('a');
       item.href = `${_scriptDir}/paginas/painel-ingressos.html?id=${evento.id}`;
       item.className = 'carousel-item';

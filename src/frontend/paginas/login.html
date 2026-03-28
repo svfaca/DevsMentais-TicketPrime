@@ -60,11 +60,10 @@
 				if (configuredUrl) {
 					return configuredUrl.replace(/\/+$/, '');
 				}
-				if (window.location.port === '3000') {
+				if (window.location.hostname === 'localhost') {
 					return 'http://localhost:5129';
 				}
-				const origin = window.location.origin;
-				return (origin && origin !== 'null') ? origin : 'http://localhost:5129';
+				return 'https://devsmentais-ticketprime.up.railway.app';
 			})();
 
 			// Injeta URL do fundo.jpg apontando para a API correta (evita 404 no Live Server porta 3000)
