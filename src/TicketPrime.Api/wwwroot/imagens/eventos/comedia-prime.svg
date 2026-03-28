@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360" role="img" aria-labelledby="title desc">
+  <title id="title">Noite de Comedia Prime</title>
+  <desc id="desc">Imagem ilustrativa de palco com microfone para show de stand-up.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#5E260D"/>
+      <stop offset="100%" stop-color="#D4631D"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="360" fill="url(#bg)"/>
+  <rect x="0" y="232" width="640" height="128" fill="#3D1707"/>
+  <rect x="78" y="56" width="486" height="218" rx="16" fill="#2F1308" opacity="0.46"/>
+  <ellipse cx="320" cy="255" rx="145" ry="26" fill="#000000" opacity="0.28"/>
+  <rect x="308" y="132" width="10" height="112" rx="5" fill="#F8E4B8"/>
+  <ellipse cx="313" cy="124" rx="24" ry="16" fill="#FFE5B2"/>
+  <path d="M332 132 C358 104, 392 96, 420 104" fill="none" stroke="#FFE5B2" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="206" cy="106" r="14" fill="#FFD079"/>
+  <circle cx="420" cy="100" r="14" fill="#FFD079"/>
+  <text x="54" y="68" fill="#FFF1D5" font-family="Segoe UI, sans-serif" font-size="28" font-weight="700">NOITE DE COMEDIA PRIME</text>
+  <text x="54" y="96" fill="#FFDFA7" font-family="Segoe UI, sans-serif" font-size="17">Stand-up com convidados especiais</text>
+</svg>

@@ -41,6 +41,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("Frontend");
+app.UseStaticFiles();
 
 var connectionString = builder.Configuration.GetConnectionString("NeonDB")
     ?? throw new InvalidOperationException("Connection string 'NeonDB' nao encontrada. Configure em appsettings.json.");
@@ -48,7 +49,7 @@ var connectionString = builder.Configuration.GetConnectionString("NeonDB")
 var tokenSecret = builder.Configuration["Auth:TokenSecret"] ?? "ticketprime-dev-token-secret-change-this";
 var bootstrapAdminKey = builder.Configuration["Auth:BootstrapAdminKey"] ?? "ticketprime-bootstrap-admin";
 
-await EnsureAuthSchemaAsync(connectionString);
+await EnsureAuthSchemaAsync(connectionString, app.Logger);
 
 // ── EVENTOS ──────────────────────────────────────────────────────────────────
 
@@ -56,7 +57,7 @@ app.MapGet("/api/eventos/publico", async () =>
 {
     await using var connection = new NpgsqlConnection(connectionString);
     var eventos = await connection.QueryAsync(@"
-        SELECT e.Id, e.Nome, e.CapacidadeTotal, e.DataEvento, e.PrecoPadrao 
+        SELECT e.Id, e.Nome, e.CapacidadeTotal, e.DataEvento, e.PrecoPadrao, e.ImagemUrl
         FROM Eventos e
         INNER JOIN Usuarios u ON e.CriadoPorCpf = u.Cpf
         WHERE u.Ativa = TRUE
@@ -82,7 +83,7 @@ app.MapGet("/api/eventos", async (HttpContext httpContext) =>
         return Results.StatusCode(StatusCodes.Status403Forbidden);
 
     var eventos = await connection.QueryAsync(
-        "SELECT Id, Nome, CapacidadeTotal, DataEvento, PrecoPadrao FROM Eventos WHERE CriadoPorCpf = @Cpf ORDER BY DataEvento DESC",
+        "SELECT Id, Nome, CapacidadeTotal, DataEvento, PrecoPadrao, ImagemUrl FROM Eventos WHERE CriadoPorCpf = @Cpf ORDER BY DataEvento DESC",
         new { Cpf = auth!.Cpf });
 
     return Results.Ok(eventos);
@@ -106,9 +107,9 @@ app.MapPost("/api/eventos", async (CriarEventoRequest request, HttpContext httpC
         return Results.StatusCode(StatusCodes.Status403Forbidden);
 
     await connection.ExecuteAsync(@"
-        INSERT INTO Eventos (Nome, CapacidadeTotal, DataEvento, PrecoPadrao, CriadoPorCpf)
-        VALUES (@Nome, @CapacidadeTotal, @DataEvento, @PrecoPadrao, @CriadoPorCpf)",
-        new { request.Nome, request.CapacidadeTotal, request.DataEvento, request.PrecoPadrao, CriadoPorCpf = auth!.Cpf });
+        INSERT INTO Eventos (Nome, CapacidadeTotal, DataEvento, PrecoPadrao, CriadoPorCpf, ImagemUrl)
+        VALUES (@Nome, @CapacidadeTotal, @DataEvento, @PrecoPadrao, @CriadoPorCpf, @ImagemUrl)",
+        new { request.Nome, request.CapacidadeTotal, request.DataEvento, request.PrecoPadrao, CriadoPorCpf = auth!.Cpf, request.ImagemUrl });
 
     return Results.Created("/api/eventos", null);
 })
@@ -320,7 +321,7 @@ app.MapGet("/api/me", async (HttpContext httpContext) =>
 
     await using var connection = new NpgsqlConnection(connectionString);
     var usuario = await connection.QueryFirstOrDefaultAsync(
-        "SELECT Cpf, Nome, Email, TipoConta FROM Usuarios WHERE Cpf = @Cpf",
+        "SELECT Cpf, Nome, Email, TipoConta, Telefone, FotoPerfil FROM Usuarios WHERE Cpf = @Cpf",
         new { Cpf = auth!.Cpf });
 
     return usuario is null ? Results.NotFound() : Results.Ok(usuario);
@@ -328,6 +329,118 @@ app.MapGet("/api/me", async (HttpContext httpContext) =>
 .WithName("MeuPerfil")
 .WithDescription("Retorna apenas os dados do usuario autenticado")
 .Produces(200).Produces(401).Produces(404);
+
+app.MapPut("/api/me", async (AtualizarPerfilRequest request, HttpContext httpContext) =>
+{
+    var authError = TryAuthenticate(httpContext, tokenSecret, out var auth);
+    if (authError is not null) return authError;
+
+    if (string.IsNullOrWhiteSpace(request.Nome) || string.IsNullOrWhiteSpace(request.Email))
+        return Results.BadRequest("Nome e email sao obrigatorios.");
+
+    await using var connection = new NpgsqlConnection(connectionString);
+    
+    await connection.ExecuteAsync(@"
+        UPDATE Usuarios 
+        SET Nome = @Nome,
+            Email = @Email,
+            Telefone = @Telefone
+        WHERE Cpf = @Cpf",
+        new { Cpf = auth!.Cpf, request.Nome, request.Email, request.Telefone });
+
+    var usuarioAtualizado = await connection.QueryFirstOrDefaultAsync(
+        "SELECT Cpf, Nome, Email, TipoConta, Telefone, FotoPerfil FROM Usuarios WHERE Cpf = @Cpf",
+        new { Cpf = auth!.Cpf });
+
+    return Results.Ok(usuarioAtualizado);
+})
+.WithName("AtualizarPerfil")
+.WithDescription("Atualiza dados do perfil do usuario autenticado")
+.Produces(200).Produces(400).Produces(401).Produces(404);
+
+app.MapPost("/api/me/foto", async (HttpContext httpContext, ILogger<Program> logger) =>
+{
+    var authError = TryAuthenticate(httpContext, tokenSecret, out var auth);
+    if (authError is not null) return authError;
+
+    var cpfNormalizado = NormalizeCpf(auth!.Cpf);
+    if (cpfNormalizado.Length != 11)
+        return Results.Unauthorized();
+
+    if (!httpContext.Request.HasFormContentType)
+        return Results.BadRequest("Requisicao deve ser multipart/form-data.");
+
+    var file = httpContext.Request.Form.Files.GetFile("file");
+
+    if (file is null || file.Length == 0)
+        return Results.BadRequest("Arquivo invalido.");
+
+    const long maxBytes = 5 * 1024 * 1024; // 5 MB
+    if (file.Length > maxBytes)
+        return Results.BadRequest("Arquivo muito grande. Tamanho maximo: 5MB.");
+
+    var extensoesPermitidas = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+    var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+
+    if (!extensoesPermitidas.Contains(ext))
+        return Results.BadRequest("Formato invalido. Use JPG, PNG ou WebP.");
+
+    var pasta = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "imagens", "perfis");
+    if (!Directory.Exists(pasta))
+        Directory.CreateDirectory(pasta);
+
+    var nomeArquivo = Guid.NewGuid().ToString("N") + ext;
+    var caminhoCompleto = Path.Combine(pasta, nomeArquivo);
+
+    await using (var stream = new FileStream(caminhoCompleto, FileMode.Create))
+    {
+        await file.CopyToAsync(stream);
+    }
+
+    var url = $"/imagens/perfis/{nomeArquivo}";
+
+    await using var connection = new NpgsqlConnection(connectionString);
+    
+    // 🔥 LOGS DE DEBUG FINAL
+    logger.LogInformation("🔥 URL SALVA: {Url}", url);
+    logger.LogInformation("🔥 CPF USADO: {Cpf}", cpfNormalizado);
+    logger.LogInformation("🔥 CONNECTION: {Connection}", ExtractConnectionInfo(connectionString));
+    logger.LogInformation("Upload foto perfil - CPF token normalizado: '{Cpf}'", cpfNormalizado);
+
+    var rows = await connection.ExecuteAsync(@"
+        UPDATE Usuarios
+        SET FotoPerfil = @FotoPerfil
+        WHERE regexp_replace(trim(Cpf), '[^0-9]', '', 'g') = @Cpf",
+        new { FotoPerfil = url, Cpf = cpfNormalizado });
+
+    logger.LogInformation("🔥 ROWS AFETADAS: {Rows}", rows);
+    logger.LogInformation("Upload foto perfil - Rows afetadas: {Rows}", rows);
+
+    if (rows == 0)
+        return Results.NotFound("Usuario autenticado nao encontrado para persistir foto de perfil.");
+
+    return Results.Ok(new { url });
+})
+.WithName("UploadFotoPerfil")
+.WithDescription("Faz upload da foto de perfil e salva o caminho no banco")
+.Produces(200).Produces(400).Produces(401).Produces(404);
+
+app.MapDelete("/api/me", async (HttpContext httpContext) =>
+{
+    var authError = TryAuthenticate(httpContext, tokenSecret, out var auth);
+    if (authError is not null) return authError;
+
+    await using var connection = new NpgsqlConnection(connectionString);
+    
+    await connection.ExecuteAsync(
+        "DELETE FROM Usuarios WHERE Cpf = @Cpf",
+        new { Cpf = auth!.Cpf });
+
+    return Results.Ok(new { mensagem = "Conta excluida com sucesso." });
+})
+.WithName("DeletarConta")
+.WithDescription("Deleta a conta do usuario autenticado")
+.Produces(200).Produces(401);
 
 app.MapPost("/api/usuarios", async (CriarUsuarioRequest request, HttpContext httpContext) =>
 {
@@ -398,9 +511,10 @@ app.MapPost("/api/auth/login", async (LoginRequest request) =>
 
     await using var connection = new NpgsqlConnection(connectionString);
     var usuario = await connection.QueryFirstOrDefaultAsync<UsuarioLogin>(@"
-        SELECT Cpf, Nome, Email, SenhaHash, TipoConta
+        SELECT Cpf, Nome, Email, Telefone, FotoPerfil, SenhaHash, TipoConta
         FROM Usuarios
-        WHERE Cpf = @Cpf OR Email = @Email",
+        WHERE regexp_replace(trim(Cpf), '[^0-9]', '', 'g') = @Cpf
+           OR lower(Email) = lower(@Email)",
         new { Cpf = cpfNormalizado, Email = request.Usuario });
 
     if (usuario is null || string.IsNullOrWhiteSpace(usuario.SenhaHash))
@@ -414,7 +528,14 @@ app.MapPost("/api/auth/login", async (LoginRequest request) =>
         usuario.Cpf, tipoConta,
         DateTimeOffset.UtcNow.AddHours(8).ToUnixTimeSeconds()));
 
-    return Results.Ok(new LoginResponse(usuario.Cpf, usuario.Nome, usuario.Email, tipoConta, token));
+    return Results.Ok(new LoginResponse(
+        usuario.Cpf,
+        usuario.Nome,
+        usuario.Email,
+        tipoConta,
+        token,
+        usuario.Telefone,
+        usuario.FotoPerfil));
 })
 .WithName("Login")
 .WithDescription("Realiza login com CPF/e-mail e senha")
@@ -472,6 +593,19 @@ static IResult? TryAuthenticate(HttpContext httpContext, string tokenSecret, out
 static string NormalizeCpf(string value) =>
     new string(value.Where(char.IsDigit).ToArray());
 
+static string ExtractConnectionInfo(string connectionString)
+{
+    try
+    {
+        var builder = new NpgsqlConnectionStringBuilder(connectionString);
+        return $"Host={builder.Host} Database={builder.Database} User={builder.Username}";
+    }
+    catch
+    {
+        return "Connection string inválida ou não pode ser parseada";
+    }
+}
+
 static string? NormalizeAccountType(string? value)
 {
     if (string.IsNullOrWhiteSpace(value)) return null;
@@ -512,7 +646,10 @@ static bool TryValidateToken(string secret, string token, out TokenPayload? payl
     var tipo = NormalizeAccountType(payload.TipoConta);
     if (tipo is null) return false;
 
-    payload = payload with { TipoConta = tipo };
+    var cpfNormalizado = NormalizeCpf(payload.Cpf);
+    if (cpfNormalizado.Length != 11) return false;
+
+    payload = payload with { Cpf = cpfNormalizado, TipoConta = tipo };
     return payload.ExpiraEmUnix > DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 }
 
@@ -538,7 +675,7 @@ static bool TryBase64UrlDecode(string input, out byte[] data)
     catch { data = Array.Empty<byte>(); return false; }
 }
 
-static async Task EnsureAuthSchemaAsync(string connectionString)
+static async Task EnsureAuthSchemaAsync(string connectionString, ILogger logger)
 {
     await using var connection = new NpgsqlConnection(connectionString);
     await connection.ExecuteAsync(@"
@@ -551,14 +688,17 @@ static async Task EnsureAuthSchemaAsync(string connectionString)
             Ativa BOOLEAN DEFAULT TRUE
         );
         ALTER TABLE Usuarios ADD COLUMN IF NOT EXISTS Ativa BOOLEAN DEFAULT TRUE;
+        ALTER TABLE Usuarios ADD COLUMN IF NOT EXISTS Telefone TEXT;
+        ALTER TABLE Usuarios ADD COLUMN IF NOT EXISTS FotoPerfil TEXT;
         CREATE TABLE IF NOT EXISTS Eventos (
             Id SERIAL PRIMARY KEY,
             Nome TEXT NOT NULL,
             CapacidadeTotal INTEGER NOT NULL,
             DataEvento TIMESTAMPTZ NOT NULL,
             PrecoPadrao NUMERIC(10,2) NOT NULL,
-            CriadoPorCpf VARCHAR(11) REFERENCES Usuarios(Cpf)
+            CriadoPorCpf VARCHAR(11) NOT NULL REFERENCES Usuarios(Cpf)
         );
+        ALTER TABLE Eventos ADD COLUMN IF NOT EXISTS ImagemUrl TEXT;
         CREATE TABLE IF NOT EXISTS Cupons (
             Codigo TEXT PRIMARY KEY,
             PorcentagemDesconto NUMERIC(5,2) NOT NULL,
@@ -577,17 +717,34 @@ static async Task EnsureAuthSchemaAsync(string connectionString)
         );
         ALTER TABLE Reservas ADD COLUMN IF NOT EXISTS Assento TEXT;
     ");
+
+    var eventosSemCriador = await connection.ExecuteScalarAsync<int>(@"
+        SELECT COUNT(1)
+        FROM Eventos
+        WHERE CriadoPorCpf IS NULL");
+
+    if (eventosSemCriador == 0)
+    {
+        await connection.ExecuteAsync("ALTER TABLE Eventos ALTER COLUMN CriadoPorCpf SET NOT NULL;");
+    }
+    else
+    {
+        logger.LogWarning(
+            "Existem {Quantidade} eventos sem CriadoPorCpf. Corrija os dados antigos antes de aplicar NOT NULL em Eventos.CriadoPorCpf.",
+            eventosSemCriador);
+    }
 }
 
-record CriarEventoRequest(string Nome, int CapacidadeTotal, DateTime DataEvento, decimal PrecoPadrao);
+record CriarEventoRequest(string Nome, int CapacidadeTotal, DateTime DataEvento, decimal PrecoPadrao, string? ImagemUrl);
 record CriarCupomRequest(string Codigo, decimal PorcentagemDesconto, decimal ValorMinimoRegra);
 record CriarReservaRequest(int EventoId, string? CodigoCupom, string? Assento);
 record CriarUsuarioRequest(string Cpf, string Nome, string Email, string Senha, string TipoConta);
 record RegistrarRequest(string Nome, string Cpf, string Email, string Senha, string? TipoConta);
 record RegistrarAdminRequest(string Nome, string Cpf, string Email, string Senha);
 record BootstrapAdminRequest(string Nome, string Cpf, string Email, string Senha, string ChaveInstalacao);
+record AtualizarPerfilRequest(string Nome, string Email, string? Telefone, string? FotoPerfil);
 record LoginRequest(string Usuario, string Senha);
-record LoginResponse(string Cpf, string Nome, string Email, string TipoConta, string Token);
+record LoginResponse(string Cpf, string Nome, string Email, string TipoConta, string Token, string? Telefone, string? FotoPerfil);
 record TokenPayload(string Cpf, string TipoConta, long ExpiraEmUnix);
 record AccountCreateData(string Cpf, string Nome, string Email, string Senha, string TipoConta);
 
@@ -596,6 +753,8 @@ class UsuarioLogin
     public string Cpf { get; set; } = string.Empty;
     public string Nome { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
+    public string? Telefone { get; set; }
+    public string? FotoPerfil { get; set; }
     public string? SenhaHash { get; set; }
     public string TipoConta { get; set; } = "usuario";
 }

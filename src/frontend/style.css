@@ -45,10 +45,14 @@ body {
 }
 
 /* imagem de fundo adicionar class de body */
+/* --fundo-url é definida via JS com a URL correta da API (evita 404 no Live Server porta 3000) */
 .login-page {
-    background:
+    background-image:
         linear-gradient(rgba(0, 0, 0, 0.62), rgba(40, 40, 40, 0.62)),
-        url('./imagens/fundo.jpg') no-repeat center center / cover;
+        var(--fundo-url, none);
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-size: cover;
 }
 
 .home-page {
@@ -167,6 +171,25 @@ body.light-mode .theme-toggle {
 
 .menu-toggle:hover {
     background: rgba(255, 255, 255, 0.22);
+}
+
+.profile-avatar-button {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    object-fit: cover;
+    cursor: pointer;
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    background: transparent;
+    position: relative;
+    z-index: 20;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.profile-avatar-button:hover {
+    transform: scale(1.06);
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
+    background: transparent;
 }
 
 .sidebar-backdrop {
@@ -1663,9 +1686,12 @@ body.light-mode {
 
 .light-mode.login-page,
 .light-mode.home-page {
-    background:
+    background-image:
         linear-gradient(rgba(255, 255, 255, 0.84), rgba(231, 240, 251, 0.86)),
-        url('./imagens/fundo2.jpg') no-repeat center center / cover;
+        var(--fundo-url, none);
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-size: cover;
 }
 
 .light-mode .site-navbar,
@@ -1794,6 +1820,11 @@ body.light-mode {
     .menu-toggle {
         width: 42px;
         height: 42px;
+    }
+
+    .profile-avatar-button {
+        width: 48px;
+        height: 48px;
     }
 
     .theme-toggle {

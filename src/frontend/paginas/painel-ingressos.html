@@ -130,6 +130,12 @@
 </div>
 
 <script>
+  /* ─── Config ─────────────────────────────────────── */
+  const API_BASE_URL = (() => {
+    const origin = window.location.origin;
+    return (origin && origin !== 'null') ? origin : 'http://localhost:5129';
+  })();
+
   /* ─── Dados ──────────────────────────────────────── */
   const prices    = { pista: 120, vip: 220 };
   const typeNames = { pista: 'Pista', vip: 'VIP' };
@@ -275,7 +281,7 @@
     const total = document.getElementById('sum-total').textContent;
 
     try {
-      const resp = await fetch('http://localhost:5129/api/reservas', {
+      const resp = await fetch(`${API_BASE_URL}/api/reservas`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -368,8 +374,8 @@
 
   if (eventoId) {
     Promise.all([
-      fetch(`http://localhost:5129/api/eventos/publico`).then(r => r.json()),
-      fetch(`http://localhost:5129/api/eventos/${eventoId}/assentos-ocupados`).then(r => r.json()).catch(() => [])
+      fetch(`${API_BASE_URL}/api/eventos/publico`).then(r => r.json()),
+      fetch(`${API_BASE_URL}/api/eventos/${eventoId}/assentos-ocupados`).then(r => r.json()).catch(() => [])
     ]).then(([eventos, ocupados]) => {
       ocupadosDoServidor = new Set(ocupados);
       rebuildGridComOcupados();

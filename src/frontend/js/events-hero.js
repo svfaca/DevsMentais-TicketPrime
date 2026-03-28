@@ -1,19 +1,50 @@
 // Dados dos eventos (carregados da API)
 let EVENTS_DATA = [];
 
-// URL da API (ajuste conforme necessário)
-const API_URL = 'http://localhost:5129/api/eventos/publico';
+// Base URL do backend (API + arquivos estaticos)
+const API_BASE_URL = (() => {
+    const configuredUrl = localStorage.getItem('API_URL');
+    if (configuredUrl) {
+        return configuredUrl.replace(/\/+$/, '');
+    }
 
-// Mapear imagens dos eventos
+    if (window.location.port === '3000') {
+        return 'http://localhost:5129';
+    }
+
+    const origin = window.location.origin;
+    return (origin && origin !== 'null') ? origin : 'http://localhost:5129';
+})();
+const API_URL = `${API_BASE_URL}/api/eventos/publico`;
+
+function toAbsoluteImageUrl(path) {
+    if (!path) return path;
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    return `${API_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`;
+}
+
+// Array de imagens disponíveis para fallback circular
+const IMAGENS_DISPONIVEIS = [
+    `${API_BASE_URL}/imagens/luan.jpg`,
+    `${API_BASE_URL}/imagens/matueebrandao.jpg`,
+    `${API_BASE_URL}/imagens/leo.jpg`,
+    `${API_BASE_URL}/imagens/bienal.jpg`,
+    `${API_BASE_URL}/imagens/futurecom.png`,
+    `${API_BASE_URL}/imagens/ccxp.jpg`,
+    `${API_BASE_URL}/imagens/kanye.jpg`,
+    `${API_BASE_URL}/imagens/SWING.png`
+];
+
+// Mapear imagens dos eventos por nome (opcional)
 const IMAGENS_EVENTOS = {
-    'Luan Santana - Para Sempre': './imagens/luan.jpg',
-    'Matue & Brandão - Encontro de Gerações': './imagens/matueebrandao.jpg',
-    'Leo Santana - Festa do Povo': './imagens/leo.jpg',
-    'Bienal Internacional do Livro - São Paulo 2026': './imagens/bienal.jpg',
-    'Futurecom 2026 - Festival de Tecnologia e Inovação': './imagens/futurecom.png',
-    'CCXP 2026 - Comic Con Experience': './imagens/ccxp.jpg',
-    'Kanye West - O Retorno': './imagens/kanye.jpg',
-    'Swing Gala Festival 2026': './imagens/SWING.png'
+    'Luan Santana - Para Sempre': `${API_BASE_URL}/imagens/luan.jpg`,
+    'Matue & Brandão - Encontro de Gerações': `${API_BASE_URL}/imagens/matueebrandao.jpg`,
+    'Leo Santana - Festa do Povo': `${API_BASE_URL}/imagens/leo.jpg`,
+    'Bienal Internacional do Livro - São Paulo 2026': `${API_BASE_URL}/imagens/bienal.jpg`,
+    'Futurecom 2026 - Festival de Tecnologia e Inovação': `${API_BASE_URL}/imagens/futurecom.png`,
+    'CCXP 2026 - Comic Con Experience': `${API_BASE_URL}/imagens/ccxp.jpg`,
+    'Kanye West - O Retorno': `${API_BASE_URL}/imagens/kanye.jpg`,
+    'Swing Gala Festival 2026': `${API_BASE_URL}/imagens/SWING.png`
 };
 
 // Função para buscar eventos da API
@@ -26,20 +57,27 @@ async function carregarEventosDaAPI() {
         const eventosAPI = await response.json();
         console.log('✅ Resposta bruta da API:', eventosAPI);
 
-        if (!Array.isArray(eventosAPI) || eventosAPI.length === 0) {
-            throw new Error('Nenhum evento retornado');
+        if (!Array.isArray(eventosAPI)) {
+            throw new Error('Resposta da API em formato invalido');
+        }
+
+        const semEventos = eventosAPI.length === 0;
+        if (eventosAPI.length === 0) {
+            console.warn('⚠️ Nenhum evento disponível');
         }
 
         // Slide inicial
         const slideInicial = {
             id: 0,
-            nome: 'TicketPrime - Bem-vindo',
+            nome: semEventos ? 'TicketPrime - Sem eventos no momento' : 'TicketPrime - Bem-vindo',
             artista: 'Bem-vindo',
             data: '2026-04-01',
             local: 'Plataforma Online',
-            descricao: 'Descubra os melhores eventos e artistas em nossa plataforma. Compre seus ingressos com segurança e conforto.',
+            descricao: semEventos
+                ? 'Ainda nao ha eventos publicados. Volte em breve ou confira com o administrador.'
+                : 'Descubra os melhores eventos e artistas em nossa plataforma. Compre seus ingressos com seguranca e conforto.',
             preco: 0.00,
-            imagem: './imagens/fundo.jpg',
+            imagem: `${API_BASE_URL}/imagens/fundo.jpg`,
             tipo: 'slide-inicial'
         };
 
@@ -54,21 +92,27 @@ async function carregarEventosDaAPI() {
                 const dataEvento = evento.dataEvento ?? evento.DataEvento ?? evento.data ?? new Date().toISOString();
                 const capacidadeTotal = evento.capacidadeTotal ?? evento.CapacidadeTotal ?? 0;
                 const precoPadrao = evento.precoPadrao ?? evento.PrecoPadrao ?? 0;
+                const local = evento.local ?? evento.Local ?? evento.endereco ?? evento.Endereco ?? 'Local a confirmar';
+                
+                // Usar imagem do banco de dados, com fallback
+                let imagem = evento.imagemUrl ?? evento.ImagemUrl;
+                if (!imagem) {
+                    // Fallback: tentar mapear por nome ou usar fallback circular
+                    imagem = IMAGENS_EVENTOS[nome] || IMAGENS_DISPONIVEIS[index % IMAGENS_DISPONIVEIS.length];
+                }
+                imagem = toAbsoluteImageUrl(imagem);
 
                 // Garantir que dataEvento é uma string
                 const dataStr = typeof dataEvento === 'string' ? dataEvento : dataEvento.toString();
                 const data = dataStr.includes('T') ? dataStr.split('T')[0] : dataStr.split(' ')[0];
-
-                // Buscar imagem mapeada ou usar padrão
-                const imagem = IMAGENS_EVENTOS[nome] || './imagens/fundo.jpg';
 
                 return {
                     id: id,
                     nome: nome,
                     artista: nome.split('-')[0]?.trim() || 'Artista',
                     data: data,
-                    local: 'Local a confirmar',
-                    descricao: `${nome} - Capacidade: ${capacidadeTotal} pessoas`,
+                    local: local,
+                    descricao: `${nome}`,
                     preco: parseFloat(precoPadrao),
                     imagem: imagem,
                     tipo: 'evento',
@@ -101,7 +145,7 @@ function carregarEventosFictícios() {
             local: 'Plataforma Online',
             descricao: 'Descubra os melhores eventos e artistas em nossa plataforma. Compre seus ingressos com segurança e conforto.',
             preco: 0.00,
-            imagem: './imagens/fundo.jpg',
+            imagem: `${API_BASE_URL}/imagens/fundo.jpg`,
             tipo: 'slide-inicial'
         },
         {
@@ -112,7 +156,7 @@ function carregarEventosFictícios() {
             local: 'Allianz Parque, São Paulo - SP',
             descricao: 'Luan Santana traz sua maior turnê com sucessos de sua carreira e lançamentos exclusivos.',
             preco: 150.00,
-            imagem: './imagens/luan.jpg',
+            imagem: `${API_BASE_URL}/imagens/luan.jpg`,
             tipo: 'evento'
         },
         {
@@ -123,7 +167,7 @@ function carregarEventosFictícios() {
             local: 'Ginásio do Morumbi, São Paulo - SP',
             descricao: 'Um encontro épico entre gerações da música brasileira, com dj sets incríveis e surpresas.',
             preco: 180.00,
-            imagem: './imagens/matueebrandao.jpg',
+            imagem: `${API_BASE_URL}/imagens/matueebrandao.jpg`,
             tipo: 'evento'
         },
         {
@@ -134,7 +178,7 @@ function carregarEventosFictícios() {
             local: 'Campo Grande, Brasília - DF',
             descricao: 'Festival ao ar livre com Leo Santana e artistas convidados em grande produção.',
             preco: 80.00,
-            imagem: './imagens/leo.jpg',
+            imagem: `${API_BASE_URL}/imagens/leo.jpg`,
             tipo: 'evento'
         },
         {
@@ -145,7 +189,7 @@ function carregarEventosFictícios() {
             local: 'Expo Center Norte, São Paulo - SP',
             descricao: 'A maior celebração da literatura brasileira e internacional. Autores renomados, palestras, lançamentos de obras e experiências imersivas.',
             preco: 45.00,
-            imagem: './imagens/bienal.jpg',
+            imagem: `${API_BASE_URL}/imagens/bienal.jpg`,
             tipo: 'evento'
         },
         {
@@ -156,7 +200,7 @@ function carregarEventosFictícios() {
             local: 'Riocentro, Rio de Janeiro - RJ',
             descricao: 'Imersão no futuro com palestras sobre IA, blockchain, realidade virtual e as maiores tendências tecnológicas do ano.',
             preco: 120.00,
-            imagem: './imagens/futurecom.png',
+            imagem: `${API_BASE_URL}/imagens/futurecom.png`,
             tipo: 'evento'
         },
         {
@@ -167,7 +211,7 @@ function carregarEventosFictícios() {
             local: 'São Paulo Expo, São Paulo - SP',
             descricao: 'O maior festival de cultura pop, quadrinhos, filmes e séries. Encontro com criadores, cosplayers e fãs apaixonados.',
             preco: 95.00,
-            imagem: './imagens/ccxp.jpg',
+            imagem: `${API_BASE_URL}/imagens/ccxp.jpg`,
             tipo: 'evento'
         },
         {
@@ -178,7 +222,7 @@ function carregarEventosFictícios() {
             local: 'Estádio do Morumbi, São Paulo - SP',
             descricao: 'Show épico do produtor e artista que revolucionou a música. Hits clássicos, novos lançamentos e colaborações especiais.',
             preco: 350.00,
-            imagem: './imagens/kanye.jpg',
+            imagem: `${API_BASE_URL}/imagens/kanye.jpg`,
             tipo: 'evento'
         },
         {
@@ -189,7 +233,7 @@ function carregarEventosFictícios() {
             local: 'Teatro Municipal, Rio de Janeiro - RJ',
             descricao: 'Noite memorável de swing para casais é solteiros liberais. Dança, música ao vivo e muita elegância.',
             preco: 180.00,
-            imagem: './imagens/SWING.png',
+            imagem: `${API_BASE_URL}/imagens/SWING.png`,
             tipo: 'evento',
             fullImage: true
         }
@@ -199,8 +243,12 @@ function carregarEventosFictícios() {
 // Função para carregar hero dinâmico
 function carregarHero() {
     const heroContainer = document.getElementById('hero-container');
-    if (!heroContainer) return;
+    if (!heroContainer) {
+        console.error('❌ Elemento hero-container não encontrado!');
+        return;
+    }
 
+    console.log(`🎨 Renderizando ${EVENTS_DATA.length} itens no hero...`);
     heroContainer.innerHTML = '';
 
     EVENTS_DATA.forEach((evento, index) => {
@@ -208,12 +256,18 @@ function carregarHero() {
         heroItem.className = 'hero-item';
         if (index === 0) heroItem.classList.add('active');
         
+        // Definir background image
+        if (evento.imagem) {
+            heroItem.style.backgroundImage = `url('${evento.imagem}')`;
+            console.log(`✅ Evento ${index}: ${evento.nome} - Imagem: ${evento.imagem}`);
+        } else {
+            console.warn(`⚠️ Evento ${index}: ${evento.nome} - Sem imagem!`);
+        }
+        
         // Se for slide inicial ou tem imagem de fundo, usa a imagem como background
         if (evento.tipo === 'slide-inicial') {
-            heroItem.style.backgroundImage = `url('${evento.imagem}')`;
             heroItem.classList.add('hero-item-inicial');
         } else {
-            heroItem.style.backgroundImage = `url('${evento.imagem}')`;
             if (evento.fullImage) {
                 heroItem.classList.add('hero-item-full');
             }
@@ -393,15 +447,20 @@ function iniciarHeroControles() {
 // Função para carregar grid de eventos
 function carregarGridEventos() {
     const eventsGrid = document.getElementById('events-grid');
-    if (!eventsGrid) return;
+    if (!eventsGrid) {
+        console.error('❌ Elemento events-grid não encontrado!');
+        return;
+    }
 
     eventsGrid.innerHTML = '';
 
     // Filtra apenas os eventos (exclui o slide inicial)
     const eventos = EVENTS_DATA.filter(e => e.tipo !== 'slide-inicial');
 
+    console.log(`📋 Renderizando grid com ${eventos.length} eventos...`);
+
     if (eventos.length === 0) {
-        eventsGrid.innerHTML = '<p style="text-align: center; grid-column: 1/-1;">Carregando eventos...</p>';
+        eventsGrid.innerHTML = '<p style="text-align: center; grid-column: 1/-1; color: #fff; padding: 40px;">Nenhum evento disponível no momento.</p>';
         return;
     }
 
@@ -411,7 +470,7 @@ function carregarGridEventos() {
         card.className = 'event-card';
 
         card.innerHTML = `
-            <img src="${evento.imagem}" alt="${evento.nome}" class="event-card-image" />
+            <img src="${evento.imagem}" alt="${evento.nome}" class="event-card-image" onerror="this.style.backgroundColor='#333'" />
             <div class="event-card-content">
                 <div class="event-card-artist">${evento.artista}</div>
                 <h3 class="event-card-title">${evento.nome}</h3>
@@ -433,26 +492,41 @@ function carregarGridEventos() {
         `;
 
         eventsGrid.appendChild(card);
+        console.log(`✅ Card criado: ${evento.nome}`);
     });
 }
 
 // Initialize quando DOM carregar
 document.addEventListener('DOMContentLoaded', async () => {
+    console.log('🚀 Iniciando carregamento de eventos...');
+    
     // Carregar eventos da API
-    await carregarEventosDaAPI();
+    const apiCarregouSucesso = await carregarEventosDaAPI();
+    console.log('📊 Eventos carregados:', EVENTS_DATA.length, 'eventos');
+    
+    // Se não conseguiu carregar da API, carregar dados fictícios
+    if (!apiCarregouSucesso) {
+        console.warn('⚠️ Usando dados fictícios como fallback');
+    }
     
     // Embaralhar eventos em ordem aleatória
-    const eventosSlide = EVENTS_DATA[0]; // Preservar slide inicial
-    const eventos = EVENTS_DATA.slice(1); // Pegar apenas os eventos
+    if (EVENTS_DATA.length > 1) {
+        const eventosSlide = EVENTS_DATA[0]; // Preservar slide inicial
+        const eventos = EVENTS_DATA.slice(1); // Pegar apenas os eventos
 
-    for (let i = eventos.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [eventos[i], eventos[j]] = [eventos[j], eventos[i]];
+        for (let i = eventos.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [eventos[i], eventos[j]] = [eventos[j], eventos[i]];
+        }
+
+        EVENTS_DATA = [eventosSlide, ...eventos]; // Recolocar slide inicial no início
+        console.log('✨ Eventos embaralhados');
     }
-
-    EVENTS_DATA = [eventosSlide, ...eventos]; // Recolocar slide inicial no início
     
+    console.log('🎬 Carregando Hero...');
     carregarHero();
+    
+    console.log('🎯 Carregando Grid de Eventos...');
     carregarGridEventos();
     
     // Adicionar evento ao logo/TicketPrime para voltar ao topo
@@ -466,4 +540,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
     }
+    
+    console.log('✅ Inicialização completa!');
 });

@@ -55,7 +55,21 @@
 		</div>
 
 		<script>
-			const API_BASE_URL = 'http://localhost:5129';
+			const API_BASE_URL = (() => {
+				const configuredUrl = localStorage.getItem('API_URL');
+				if (configuredUrl) {
+					return configuredUrl.replace(/\/+$/, '');
+				}
+				if (window.location.port === '3000') {
+					return 'http://localhost:5129';
+				}
+				const origin = window.location.origin;
+				return (origin && origin !== 'null') ? origin : 'http://localhost:5129';
+			})();
+
+			// Injeta URL do fundo.jpg apontando para a API correta (evita 404 no Live Server porta 3000)
+			document.body.style.setProperty('--fundo-url', `url('${API_BASE_URL}/imagens/fundo.jpg')`);
+
 			let isRegisterMode = false;
 			const loginForm = document.getElementById('loginForm');
 			const loginMessage = document.getElementById('loginMessage');

@@ -328,6 +328,11 @@
 
   <script>
     // ── Auth ─────────────────────────────────────────────
+    const API_BASE_URL = (() => {
+      const origin = window.location.origin;
+      return (origin && origin !== 'null') ? origin : 'http://localhost:5129';
+    })();
+
     let session;
     try { session = JSON.parse(localStorage.getItem('ticketprimeUser') || 'null'); } catch { session = null; }
 
@@ -412,7 +417,7 @@
     // ── Buscar reservas ───────────────────────────────────
     async function loadReservas() {
       try {
-        const resp = await fetch('http://localhost:5129/api/reservas', {
+        const resp = await fetch(`${API_BASE_URL}/api/reservas`, {
           headers: authHeaders()
         });
         if (!resp.ok) throw new Error();

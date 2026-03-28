@@ -26,6 +26,11 @@ async function carregarEventos() {
     if (!resp.ok) throw new Error('Erro ao buscar eventos');
     const eventos = await resp.json();
 
+    if (!Array.isArray(eventos) || eventos.length === 0) {
+      track.innerHTML = '<p style="color:#fff;text-align:center">Nenhum evento disponivel no momento.</p>';
+      return;
+    }
+
     track.innerHTML = '';
     eventos.forEach((evento, index) => {
       const imagem = IMAGENS_EVENTOS[index % IMAGENS_EVENTOS.length];

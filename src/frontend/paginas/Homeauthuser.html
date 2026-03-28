@@ -17,15 +17,17 @@
         <img src="../imagens/logo.png" alt="Logo TicketPrime" class="logo-img" />
         <span>TicketPrime</span>
       </div>
-      <button
-        class="menu-toggle"
-        type="button"
+      <img
+        id="menuToggle"
+        class="menu-toggle profile-avatar-button"
+        src=""
+        alt="Abrir menu lateral"
         aria-label="Abrir menu lateral"
         aria-controls="userSidebar"
         aria-expanded="false"
-      >
-        <i class="bx bx-menu"></i>
-      </button>
+        role="button"
+        tabindex="0"
+      />
     </header>
 
     <button
@@ -122,40 +124,31 @@
 
     <!-- ═══════════════ main ═══════════════ -->
     <main class="site-main">
-      <div class="welcome-content">
-        <h1>Bem-vindo ao TicketPrime</h1>
-        <p>Gerencie seus eventos e venda ingressos de forma fácil e rápida.</p>
-      </div>
+      <!-- ═══════════════ hero section ═══════════════ -->
+      <section class="hero-section" id="hero-section">
+        <div class="hero-container" id="hero-container">
+          <!-- Hero dinâmico gerado pelo JS -->
+        </div>
+        <!-- Navegação do hero -->
+        <button class="hero-control hero-prev" type="button" aria-label="Evento anterior">
+          <i class="bx bx-chevron-left"></i>
+        </button>
+        <button class="hero-control hero-next" type="button" aria-label="Próximo evento">
+          <i class="bx bx-chevron-right"></i>
+        </button>
+        <!-- Indicadores -->
+        <div class="hero-dots" id="hero-dots" aria-label="Indicadores de eventos"></div>
+      </section>
 
-      <section class="search-panel" aria-label="Pesquisa de eventos">
-        <div class="input-box search-input">
-          <input type="text" placeholder="Buscar experiências" />
-          <i class="bx bx-search"></i>
+      <!-- ═══════════════ events grid section ═══════════════ -->
+      <section class="events-grid-section">
+        <h2 class="section-title">Próximos Eventos</h2>
+        <div class="events-grid" id="events-grid">
+          <!-- eventos carregados dinamicamente -->
         </div>
       </section>
 
-      <div class="events-section">
-        <h2 class="section-title">Eventos em destaque</h2>
-
-        <div class="events-carousel" data-carousel>
-          <button class="carousel-control prev" type="button" aria-label="Evento anterior">
-            <i class="bx bx-chevron-left"></i>
-          </button>
-
-          <div class="carousel-viewport">
-            <div class="carousel-track" id="carousel-track">
-              <!-- eventos carregados dinamicamente via API -->
-            </div>
-          </div>
-
-          <button class="carousel-control next" type="button" aria-label="Próximo evento">
-            <i class="bx bx-chevron-right"></i>
-          </button>
-
-          <div class="carousel-dots" aria-label="Indicadores do carrossel"></div>
-        </div>
-      </div>
-
+      <!-- ═══════════════ meus ingressos section ═══════════════ -->
       <section class="my-tickets-section" aria-label="Meus ingressos">
         <div class="my-tickets-header">
           <h2 class="section-title">Meus ingressos</h2>
@@ -189,7 +182,7 @@
       </p>
     </footer>
     <script>
-      (function enforceUserRoute() {
+      (async function enforceUserRoute() {
         let session;
 
         try {
@@ -217,11 +210,27 @@
           return;
         }
 
-        const API_BASE_URL = 'http://localhost:5129';
+        const API_BASE_URL = (() => {
+          const configuredUrl = localStorage.getItem('API_URL');
+          if (configuredUrl) {
+            return configuredUrl.replace(/\/+$/, '');
+          }
+
+          if (window.location.port === '3000') {
+            return 'http://localhost:5129';
+          }
+
+          const origin = window.location.origin;
+          return (origin && origin !== 'null') ? origin : 'http://localhost:5129';
+        })();
+
+        // Injeta URL do fundo.jpg apontando para a API correta (usado pelo light-mode no CSS)
+        document.body.style.setProperty('--fundo-url', `url('${API_BASE_URL}/imagens/fundo.jpg')`);
+
         const body = document.body;
         const sidebar = document.getElementById('userSidebar');
         const backdrop = document.getElementById('sidebarBackdrop');
-        const menuToggle = document.querySelector('.menu-toggle');
+        const menuToggle = document.getElementById('menuToggle');
         const menuClose = document.getElementById('menuClose');
         const createEventButton = document.getElementById('createEventButton');
         const profileName = document.getElementById('profileName');
@@ -244,6 +253,8 @@
         const myTicketsEmpty = document.getElementById('myTicketsEmpty');
         const openSettingsButtons = document.querySelectorAll('[data-open-settings="true"]');
         let selectedProfilePhoto = '';
+        let selectedProfilePhotoFile = null;
+        let photoPreviewObjectUrl = '';
         let initialProfileState = {
           nome: '',
           email: '',
@@ -264,6 +275,14 @@
           localStorage.setItem('ticketprimeUser', JSON.stringify(session));
         }
 
+        function syncSessionProfilePhoto(photoUrl) {
+          const normalizedPhotoUrl = String(photoUrl || '').trim();
+          selectedProfilePhoto = normalizedPhotoUrl;
+          session.fotoPerfil = normalizedPhotoUrl;
+          persistSession();
+          updateAvatar(normalizedPhotoUrl, { forceRefresh: true });
+        }
+
         function getCurrentProfileState() {
           return {
             nome: settingsNameInput.value.trim(),
@@ -279,7 +298,8 @@
             current.nome !== initialProfileState.nome ||
             current.email !== initialProfileState.email ||
             current.telefone !== initialProfileState.telefone ||
-            current.fotoPerfil !== initialProfileState.fotoPerfil
+            current.fotoPerfil !== initialProfileState.fotoPerfil ||
+            selectedProfilePhotoFile !== null
           );
         }
 
@@ -403,15 +423,59 @@
           return fallbackValue;
         }
 
-        function updateAvatar(photoUrl) {
-          if (photoUrl) {
-            profileAvatarImage.src = photoUrl;
+        function addCacheBust(url) {
+          if (!url || url.startsWith('blob:') || url.startsWith('data:')) {
+            return url;
+          }
+
+          const [withoutHash, hashFragment = ''] = String(url).split('#');
+          const separator = withoutHash.includes('?') ? '&' : '?';
+          return `${withoutHash}${separator}t=${Date.now()}${hashFragment ? `#${hashFragment}` : ''}`;
+        }
+
+        function getDefaultHeaderAvatar() {
+          return "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23242323'/%3E%3Ccircle cx='50' cy='37' r='20' fill='%23f2f2f2'/%3E%3Cpath d='M16 92c5-18 19-30 34-30s29 12 34 30' fill='%23f2f2f2'/%3E%3C/svg%3E";
+        }
+
+        function renderHeaderAvatar(photoUrl, options = {}) {
+          const { forceRefresh = false } = options;
+          const fullUrl = photoUrl && photoUrl.startsWith('/')
+            ? API_BASE_URL + photoUrl
+            : photoUrl;
+          const renderedUrl = forceRefresh ? addCacheBust(fullUrl) : fullUrl;
+
+          menuToggle.onerror = () => {
+            menuToggle.onerror = null;
+            menuToggle.src = getDefaultHeaderAvatar();
+          };
+
+          menuToggle.src = renderedUrl || getDefaultHeaderAvatar();
+        }
+
+        function updateAvatar(photoUrl, options = {}) {
+          const { forceRefresh = false } = options;
+          const fullUrl = photoUrl && photoUrl.startsWith('/')
+            ? API_BASE_URL + photoUrl
+            : photoUrl;
+          const renderedUrl = forceRefresh ? addCacheBust(fullUrl) : fullUrl;
+
+          if (renderedUrl) {
+            profileAvatarImage.onerror = () => {
+              profileAvatarImage.hidden = true;
+              profileAvatarFallback.hidden = false;
+            };
+            profileAvatarImage.src = renderedUrl;
             profileAvatarImage.hidden = false;
             profileAvatarFallback.hidden = true;
 
-            settingsPhotoPreviewImage.src = photoUrl;
+            settingsPhotoPreviewImage.onerror = () => {
+              settingsPhotoPreviewImage.hidden = true;
+              settingsPhotoPreviewFallback.hidden = false;
+            };
+            settingsPhotoPreviewImage.src = renderedUrl;
             settingsPhotoPreviewImage.hidden = false;
             settingsPhotoPreviewFallback.hidden = true;
+            renderHeaderAvatar(photoUrl, { forceRefresh });
             return;
           }
 
@@ -422,6 +486,7 @@
           settingsPhotoPreviewImage.hidden = true;
           settingsPhotoPreviewImage.removeAttribute('src');
           settingsPhotoPreviewFallback.hidden = false;
+          renderHeaderAvatar('', { forceRefresh: false });
         }
 
         function refreshProfileInfo() {
@@ -435,12 +500,17 @@
 
           profileName.textContent = nome;
           profileEmail.textContent = email;
-          updateAvatar(foto);
+          updateAvatar(foto, { forceRefresh: true });
 
           settingsNameInput.value = nome;
           settingsEmailInput.value = email;
           settingsPhoneInput.value = telefone;
           selectedProfilePhoto = foto;
+          selectedProfilePhotoFile = null;
+          if (photoPreviewObjectUrl) {
+            URL.revokeObjectURL(photoPreviewObjectUrl);
+            photoPreviewObjectUrl = '';
+          }
           settingsPhotoInput.value = '';
 
           initialProfileState = {
@@ -478,6 +548,12 @@
         }
 
         menuToggle.addEventListener('click', openSidebar);
+        menuToggle.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            openSidebar();
+          }
+        });
         menuClose.addEventListener('click', closeSidebar);
         backdrop.addEventListener('click', closeSidebar);
 
@@ -495,6 +571,12 @@
         settingsPhotoInput.addEventListener('change', () => {
           const [file] = settingsPhotoInput.files || [];
           if (!file) {
+            selectedProfilePhotoFile = null;
+            if (photoPreviewObjectUrl) {
+              URL.revokeObjectURL(photoPreviewObjectUrl);
+              photoPreviewObjectUrl = '';
+            }
+            updateAvatar(selectedProfilePhoto);
             updateSaveButtonState();
             return;
           }
@@ -502,17 +584,22 @@
           if (!file.type.startsWith('image/')) {
             alert('Selecione um arquivo de imagem valido.');
             settingsPhotoInput.value = '';
+            selectedProfilePhotoFile = null;
+            updateAvatar(selectedProfilePhoto);
             updateSaveButtonState();
             return;
           }
 
-          const reader = new FileReader();
-          reader.onload = () => {
-            selectedProfilePhoto = typeof reader.result === 'string' ? reader.result : '';
-            updateAvatar(selectedProfilePhoto);
-            updateSaveButtonState();
-          };
-          reader.readAsDataURL(file);
+          selectedProfilePhotoFile = file;
+          if (photoPreviewObjectUrl) {
+            URL.revokeObjectURL(photoPreviewObjectUrl);
+          }
+
+          photoPreviewObjectUrl = URL.createObjectURL(file);
+          settingsPhotoPreviewImage.src = photoPreviewObjectUrl;
+          settingsPhotoPreviewImage.hidden = false;
+          settingsPhotoPreviewFallback.hidden = true;
+          updateSaveButtonState();
         });
 
         settingsClose.addEventListener('click', closeSettings);
@@ -532,7 +619,7 @@
           const nome = settingsNameInput.value.trim();
           const email = settingsEmailInput.value.trim();
           const telefone = settingsPhoneInput.value.trim();
-          const fotoPerfil = selectedProfilePhoto;
+          let fotoPerfil = selectedProfilePhoto;
 
           if (!nome || !email) {
             alert('Nome e email sao obrigatorios.');
@@ -540,39 +627,67 @@
           }
 
           settingsSaveButton.disabled = true;
+          settingsSaveButton.textContent = 'Salvando...';
 
           try {
+            if (selectedProfilePhotoFile) {
+              const formData = new FormData();
+              formData.append('file', selectedProfilePhotoFile);
+
+              const photoResponse = await fetch(`${API_BASE_URL}/api/me/foto`, {
+                method: 'POST',
+                headers: { ...authHeaders() },
+                body: formData
+              });
+
+              console.log('[perfil] POST /api/me/foto', photoResponse.status);
+
+              if (!photoResponse.ok) {
+                const payload = await photoResponse.json().catch(() => ({}));
+                const errorMessage =
+                  typeof payload === 'string' ? payload : payload?.mensagem || 'Erro ao enviar foto. Tente novamente.';
+                alert(errorMessage);
+                updateSaveButtonState();
+                settingsSaveButton.textContent = 'Salvar alteracoes';
+                return;
+              }
+
+              const photoData = await photoResponse.json();
+              fotoPerfil = String(photoData?.url || '').trim();
+              syncSessionProfilePhoto(fotoPerfil);
+              selectedProfilePhotoFile = null;
+              settingsPhotoInput.value = '';
+              if (photoPreviewObjectUrl) {
+                URL.revokeObjectURL(photoPreviewObjectUrl);
+                photoPreviewObjectUrl = '';
+              }
+            }
+
+            const perfilPayload = {
+              nome,
+              email,
+              telefone,
+              ...(fotoPerfil ? { fotoPerfil } : {})
+            };
+
             const response = await fetch(`${API_BASE_URL}/api/me`, {
               method: 'PUT',
               headers: {
                 'Content-Type': 'application/json',
                 ...authHeaders()
               },
-              body: JSON.stringify({ nome, email, telefone, fotoPerfil })
+              body: JSON.stringify(perfilPayload)
             });
 
+            console.log('[perfil] PUT /api/me', response.status);
+
             if (!response.ok) {
-              if (response.status === 404) {
-                // Fallback para ambiente com API antiga sem endpoint /api/me.
-                session.nome = nome;
-                session.email = email;
-                session.telefone = telefone;
-                session.fotoPerfil = fotoPerfil;
-                session.tipoConta = 'usuario';
-                persistSession();
-
-                refreshProfileInfo();
-                closeSettings();
-                closeSidebar();
-                alert('Configuracoes salvas localmente. Atualize/reinicie a API para persistir no banco.');
-                return;
-              }
-
               const payload = await response.json().catch(() => ({}));
               const errorMessage =
                 typeof payload === 'string' ? payload : payload?.mensagem || 'Nao foi possivel salvar as configuracoes.';
               alert(errorMessage);
               updateSaveButtonState();
+              settingsSaveButton.textContent = 'Salvar alteracoes';
               return;
             }
 
@@ -584,13 +699,19 @@
             persistSession();
 
             refreshProfileInfo();
+            persistSession();
             closeSettings();
             closeSidebar();
             alert('Configuracoes salvas com sucesso.');
-          } catch {
+          } catch (error) {
+            console.error('[perfil] erro ao salvar', error);
             alert('Nao foi possivel conectar com a API para salvar seu perfil.');
             updateSaveButtonState();
+            settingsSaveButton.textContent = 'Salvar alteracoes';
+            return;
           }
+
+          settingsSaveButton.textContent = 'Salvar alteracoes';
         });
 
         createEventButton.addEventListener('click', async () => {
@@ -669,7 +790,7 @@
 
         logoutButton.addEventListener('click', () => {
           localStorage.removeItem('ticketprimeUser');
-          window.location.replace('./login.html');
+          window.location.replace('../index.html');
         });
 
         document.addEventListener('keydown', (event) => {
@@ -679,16 +800,62 @@
           }
         });
 
+        // Função para sincronizar dados do banco com a sessão
+        async function syncUserDataFromBank() {
+          try {
+            const token = getToken();
+            if (!token) {
+              console.log('ℹ️ Sem token, usando dados do localStorage');
+              return;
+            }
+
+            console.log('🔄 Sincronizando dados do usuário do banco...');
+            const response = await fetch(`${API_BASE_URL}/api/me`, {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`
+              }
+            });
+
+            if (response.ok) {
+              const userData = await response.json();
+              console.log('✅ Dados do banco recebidos:', userData);
+              
+              const bankFotoPerfil = String(userData.fotoPerfil ?? userData.FotoPerfil ?? '').trim();
+
+              // Atualizar session com dados do banco sem apagar foto local quando a API nao traz foto valida.
+              session = {
+                ...session,
+                nome: userData.nome ?? userData.Nome ?? session?.nome,
+                email: userData.email ?? userData.Email ?? session?.email,
+                telefone: userData.telefone ?? userData.Telefone ?? session?.telefone,
+                fotoPerfil: bankFotoPerfil || session?.fotoPerfil
+              };
+              
+              // Salvar no localStorage
+              persistSession();
+              console.log('💾 Session atualizada e salva');
+            } else {
+              console.warn('⚠️ Não foi possível buscar dados do banco:', response.status);
+            }
+          } catch (error) {
+            console.error('❌ Erro ao sincronizar dados do banco:', error);
+          }
+        }
+
         const updatedTipoConta = normalizeTipoConta(session?.tipoConta ?? session?.TipoConta);
         if (updatedTipoConta === 'adm') {
           window.location.replace('./Homeauthadm.html');
           return;
         }
 
+        // Sincronizar dados do banco ANTES de exibir
+        await syncUserDataFromBank();
         refreshProfileInfo();
         loadMyTickets();
       })();
     </script>
-    <script src="../js/home-carousel.js"></script>
+    <script src="../js/events-hero.js"></script>
   </body>
 </html>
