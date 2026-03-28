@@ -1,118 +1,199 @@
-// Dados fictícios dos eventos
-let EVENTS_DATA = [
-    {
-        id: 0,
-        nome: 'TicketPrime - Bem-vindo',
-        artista: 'Bem-vindo',
-        data: '2026-04-01',
-        local: 'Plataforma Online',
-        descricao: 'Descubra os melhores eventos e artistas em nossa plataforma. Compre seus ingressos com segurança e conforto.',
-        preco: 0.00,
-        imagem: './imagens/fundo.jpg',
-        tipo: 'slide-inicial'
-    },
-    {
-        id: 1,
-        nome: 'Luan Santana - Para Sempre',
-        artista: 'Luan Santana',
-        data: '2026-04-15',
-        local: 'Allianz Parque, São Paulo - SP',
-        descricao: 'Luan Santana traz sua maior turnê com sucessos de sua carreira e lançamentos exclusivos.',
-        preco: 150.00,
-        imagem: './imagens/luan.jpg',
-        tipo: 'evento'
-    },
-    {
-        id: 2,
-        nome: 'Matue & Brandão - Encontro de Gerações',
-        artista: 'Matue & Brandão',
-        data: '2026-05-10',
-        local: 'Ginásio do Morumbi, São Paulo - SP',
-        descricao: 'Um encontro épico entre gerações da música brasileira, com dj sets incríveis e surpresas.',
-        preco: 180.00,
-        imagem: './imagens/matueebrandao.jpg',
-        tipo: 'evento'
-    },
-    {
-        id: 3,
-        nome: 'Leo Santana - Festa do Povo',
-        artista: 'Leo Santana',
-        data: '2026-07-12',
-        local: 'Campo Grande, Brasília - DF',
-        descricao: 'Festival ao ar livre com Leo Santana e artistas convidados em grande produção.',
-        preco: 80.00,
-        imagem: './imagens/leo.jpg',
-        tipo: 'evento'
-    },
-    {
-        id: 4,
-        nome: 'Bienal Internacional do Livro - São Paulo 2026',
-        artista: 'Diversos Autores',
-        data: '2026-09-02',
-        local: 'Expo Center Norte, São Paulo - SP',
-        descricao: 'A maior celebração da literatura brasileira e internacional. Autores renomados, palestras, lançamentos de obras e experiências imersivas.',
-        preco: 45.00,
-        imagem: './imagens/bienal.jpg',
-        tipo: 'evento'
-    },
-    {
-        id: 5,
-        nome: 'Futurecom 2026 - Festival de Tecnologia e Inovação',
-        artista: 'Tech Leaders',
-        data: '2026-09-15',
-        local: 'Riocentro, Rio de Janeiro - RJ',
-        descricao: 'Imersão no futuro com palestras sobre IA, blockchain, realidade virtual e as maiores tendências tecnológicas do ano.',
-        preco: 120.00,
-        imagem: './imagens/futurecom.png',
-        tipo: 'evento'
-    },
-    {
-        id: 6,
-        nome: 'CCXP 2026 - Comic Con Experience',
-        artista: 'Criadores de Conteúdo',
-        data: '2026-10-05',
-        local: 'São Paulo Expo, São Paulo - SP',
-        descricao: 'O maior festival de cultura pop, quadrinhos, filmes e séries. Encontro com criadores, cosplayers e fãs apaixonados.',
-        preco: 95.00,
-        imagem: './imagens/ccxp.jpg',
-        tipo: 'evento'
-    },
-    {
-        id: 7,
-        nome: 'Kanye West - O Retorno',
-        artista: 'Kanye West',
-        data: '2026-10-28',
-        local: 'Estádio do Morumbi, São Paulo - SP',
-        descricao: 'Show épico do produtor e artista que revolucionou a música. Hits clássicos, novos lançamentos e colaborações especiais.',
-        preco: 350.00,
-        imagem: './imagens/kanye.jpg',
-        tipo: 'evento'
-    },
-    {
-        id: 8,
-        nome: 'Swing Gala Festival 2026',
-        artista: 'Jazz Legends',
-        data: '2026-11-12',
-        local: 'Teatro Municipal, Rio de Janeiro - RJ',
-        descricao: 'Noite memorável de swing para casais é solteiros liberais. Dança, música ao vivo e muita elegância.',
-        preco: 180.00,
-        imagem: './imagens/SWING.png',
-        tipo: 'evento',
-        fullImage: true
+// Dados dos eventos (carregados da API)
+let EVENTS_DATA = [];
+
+// URL da API (ajuste conforme necessário)
+const API_URL = 'http://localhost:5129/api/eventos/publico';
+
+// Mapear imagens dos eventos
+const IMAGENS_EVENTOS = {
+    'Luan Santana - Para Sempre': './imagens/luan.jpg',
+    'Matue & Brandão - Encontro de Gerações': './imagens/matueebrandao.jpg',
+    'Leo Santana - Festa do Povo': './imagens/leo.jpg',
+    'Bienal Internacional do Livro - São Paulo 2026': './imagens/bienal.jpg',
+    'Futurecom 2026 - Festival de Tecnologia e Inovação': './imagens/futurecom.png',
+    'CCXP 2026 - Comic Con Experience': './imagens/ccxp.jpg',
+    'Kanye West - O Retorno': './imagens/kanye.jpg',
+    'Swing Gala Festival 2026': './imagens/SWING.png'
+};
+
+// Função para buscar eventos da API
+async function carregarEventosDaAPI() {
+    try {
+        console.log('🔄 Buscando eventos de:', API_URL);
+        const response = await fetch(API_URL);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const eventosAPI = await response.json();
+        console.log('✅ Resposta bruta da API:', eventosAPI);
+
+        if (!Array.isArray(eventosAPI) || eventosAPI.length === 0) {
+            throw new Error('Nenhum evento retornado');
+        }
+
+        // Slide inicial
+        const slideInicial = {
+            id: 0,
+            nome: 'TicketPrime - Bem-vindo',
+            artista: 'Bem-vindo',
+            data: '2026-04-01',
+            local: 'Plataforma Online',
+            descricao: 'Descubra os melhores eventos e artistas em nossa plataforma. Compre seus ingressos com segurança e conforto.',
+            preco: 0.00,
+            imagem: './imagens/fundo.jpg',
+            tipo: 'slide-inicial'
+        };
+
+        // Mapear dados do banco para formato do frontend
+        const eventosFormatados = eventosAPI
+            .filter(evento => evento) // Remove valores nulos
+            .map((evento, index) => {
+                console.log(`Processando evento ${index}:`, evento);
+                
+                const id = evento.id ?? evento.Id ?? index;
+                const nome = evento.nome ?? evento.Nome ?? 'Sem nome';
+                const dataEvento = evento.dataEvento ?? evento.DataEvento ?? evento.data ?? new Date().toISOString();
+                const capacidadeTotal = evento.capacidadeTotal ?? evento.CapacidadeTotal ?? 0;
+                const precoPadrao = evento.precoPadrao ?? evento.PrecoPadrao ?? 0;
+
+                // Garantir que dataEvento é uma string
+                const dataStr = typeof dataEvento === 'string' ? dataEvento : dataEvento.toString();
+                const data = dataStr.includes('T') ? dataStr.split('T')[0] : dataStr.split(' ')[0];
+
+                // Buscar imagem mapeada ou usar padrão
+                const imagem = IMAGENS_EVENTOS[nome] || './imagens/fundo.jpg';
+
+                return {
+                    id: id,
+                    nome: nome,
+                    artista: nome.split('-')[0]?.trim() || 'Artista',
+                    data: data,
+                    local: 'Local a confirmar',
+                    descricao: `${nome} - Capacidade: ${capacidadeTotal} pessoas`,
+                    preco: parseFloat(precoPadrao),
+                    imagem: imagem,
+                    tipo: 'evento',
+                    capacidadeTotal: capacidadeTotal,
+                    fullImage: nome.includes('Swing') // Flag para SWING
+                };
+            });
+
+        console.log('✨ Eventos formatados:', eventosFormatados);
+        EVENTS_DATA = [slideInicial, ...eventosFormatados];
+        return true;
+    } catch (error) {
+        console.error('❌ Erro ao carregar eventos:', error);
+        console.error('Stack:', error.stack);
+        // Fallback: usar dados fictícios se falhar
+        console.warn('⚠️ Carregando dados fictícios como fallback...');
+        carregarEventosFictícios();
+        return false;
     }
-];
+}
 
-// Função para embaralhar array (Fisher-Yates shuffle)
-function embaralharEventos() {
-    const eventosSlide = EVENTS_DATA[0]; // Preservar slide inicial
-    const eventos = EVENTS_DATA.slice(1); // Pegar apenas os eventos
-
-    for (let i = eventos.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [eventos[i], eventos[j]] = [eventos[j], eventos[i]];
-    }
-
-    EVENTS_DATA = [eventosSlide, ...eventos]; // Recolocar slide inicial no início
+// Função fallback com dados fictícios
+function carregarEventosFictícios() {
+    EVENTS_DATA = [
+        {
+            id: 0,
+            nome: 'TicketPrime - Bem-vindo',
+            artista: 'Bem-vindo',
+            data: '2026-04-01',
+            local: 'Plataforma Online',
+            descricao: 'Descubra os melhores eventos e artistas em nossa plataforma. Compre seus ingressos com segurança e conforto.',
+            preco: 0.00,
+            imagem: './imagens/fundo.jpg',
+            tipo: 'slide-inicial'
+        },
+        {
+            id: 1,
+            nome: 'Luan Santana - Para Sempre',
+            artista: 'Luan Santana',
+            data: '2026-04-15',
+            local: 'Allianz Parque, São Paulo - SP',
+            descricao: 'Luan Santana traz sua maior turnê com sucessos de sua carreira e lançamentos exclusivos.',
+            preco: 150.00,
+            imagem: './imagens/luan.jpg',
+            tipo: 'evento'
+        },
+        {
+            id: 2,
+            nome: 'Matue & Brandão - Encontro de Gerações',
+            artista: 'Matue & Brandão',
+            data: '2026-05-10',
+            local: 'Ginásio do Morumbi, São Paulo - SP',
+            descricao: 'Um encontro épico entre gerações da música brasileira, com dj sets incríveis e surpresas.',
+            preco: 180.00,
+            imagem: './imagens/matueebrandao.jpg',
+            tipo: 'evento'
+        },
+        {
+            id: 3,
+            nome: 'Leo Santana - Festa do Povo',
+            artista: 'Leo Santana',
+            data: '2026-07-12',
+            local: 'Campo Grande, Brasília - DF',
+            descricao: 'Festival ao ar livre com Leo Santana e artistas convidados em grande produção.',
+            preco: 80.00,
+            imagem: './imagens/leo.jpg',
+            tipo: 'evento'
+        },
+        {
+            id: 4,
+            nome: 'Bienal Internacional do Livro - São Paulo 2026',
+            artista: 'Diversos Autores',
+            data: '2026-09-02',
+            local: 'Expo Center Norte, São Paulo - SP',
+            descricao: 'A maior celebração da literatura brasileira e internacional. Autores renomados, palestras, lançamentos de obras e experiências imersivas.',
+            preco: 45.00,
+            imagem: './imagens/bienal.jpg',
+            tipo: 'evento'
+        },
+        {
+            id: 5,
+            nome: 'Futurecom 2026 - Festival de Tecnologia e Inovação',
+            artista: 'Tech Leaders',
+            data: '2026-09-15',
+            local: 'Riocentro, Rio de Janeiro - RJ',
+            descricao: 'Imersão no futuro com palestras sobre IA, blockchain, realidade virtual e as maiores tendências tecnológicas do ano.',
+            preco: 120.00,
+            imagem: './imagens/futurecom.png',
+            tipo: 'evento'
+        },
+        {
+            id: 6,
+            nome: 'CCXP 2026 - Comic Con Experience',
+            artista: 'Criadores de Conteúdo',
+            data: '2026-10-05',
+            local: 'São Paulo Expo, São Paulo - SP',
+            descricao: 'O maior festival de cultura pop, quadrinhos, filmes e séries. Encontro com criadores, cosplayers e fãs apaixonados.',
+            preco: 95.00,
+            imagem: './imagens/ccxp.jpg',
+            tipo: 'evento'
+        },
+        {
+            id: 7,
+            nome: 'Kanye West - O Retorno',
+            artista: 'Kanye West',
+            data: '2026-10-28',
+            local: 'Estádio do Morumbi, São Paulo - SP',
+            descricao: 'Show épico do produtor e artista que revolucionou a música. Hits clássicos, novos lançamentos e colaborações especiais.',
+            preco: 350.00,
+            imagem: './imagens/kanye.jpg',
+            tipo: 'evento'
+        },
+        {
+            id: 8,
+            nome: 'Swing Gala Festival 2026',
+            artista: 'Jazz Legends',
+            data: '2026-11-12',
+            local: 'Teatro Municipal, Rio de Janeiro - RJ',
+            descricao: 'Noite memorável de swing para casais é solteiros liberais. Dança, música ao vivo e muita elegância.',
+            preco: 180.00,
+            imagem: './imagens/SWING.png',
+            tipo: 'evento',
+            fullImage: true
+        }
+    ];
 }
 
 // Função para carregar hero dinâmico
@@ -178,16 +259,36 @@ function carregarHero() {
     carregarDots();
     // Inicializar controles do hero
     iniciarHeroControles();
-    // Adicionar evento ao botão Explorar Eventos
-    const botaoExplorar = heroContainer.querySelector('.hero-item.active .hero-actions .hero-btn.primary');
-    if (botaoExplorar && botaoExplorar.textContent.includes('Explorar Eventos')) {
-        botaoExplorar.addEventListener('click', () => {
-            const eventsSection = document.querySelector('.events-grid-section');
-            if (eventsSection) {
-                eventsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    
+    // Adicionar eventos aos botões do hero para cada item
+    EVENTS_DATA.forEach((evento, index) => {
+        const heroItem = heroContainer.querySelector(`.hero-item[data-index="${index}"]`);
+        if (!heroItem) return;
+        
+        const botaoPrimario = heroItem.querySelector('.hero-btn.primary');
+        const botaoSecundario = heroItem.querySelector('.hero-btn.secondary');
+        
+        if (botaoPrimario) {
+            if (evento.tipo === 'slide-inicial') {
+                // Botão "Explorar Eventos" do slide inicial
+                if (botaoPrimario.textContent.includes('Explorar Eventos')) {
+                    botaoPrimario.addEventListener('click', () => {
+                        const eventsSection = document.querySelector('.events-grid-section');
+                        if (eventsSection) {
+                            eventsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                    });
+                }
+            } else {
+                // Botão "Comprar Ingressos" dos eventos
+                if (botaoPrimario.textContent.includes('Comprar Ingressos')) {
+                    botaoPrimario.addEventListener('click', () => {
+                        window.location.href = `./paginas/painel-ingressos.html?id=${evento.id}`;
+                    });
+                }
             }
-        });
-    }
+        }
+    });
 }
 
 // Função para carregar dots (indicadores)
@@ -297,7 +398,12 @@ function carregarGridEventos() {
     eventsGrid.innerHTML = '';
 
     // Filtra apenas os eventos (exclui o slide inicial)
-    const eventos = EVENTS_DATA.filter(e => e.tipo === 'evento');
+    const eventos = EVENTS_DATA.filter(e => e.tipo !== 'slide-inicial');
+
+    if (eventos.length === 0) {
+        eventsGrid.innerHTML = '<p style="text-align: center; grid-column: 1/-1;">Carregando eventos...</p>';
+        return;
+    }
 
     eventos.forEach((evento) => {
         const card = document.createElement('a');
@@ -331,9 +437,20 @@ function carregarGridEventos() {
 }
 
 // Initialize quando DOM carregar
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    // Carregar eventos da API
+    await carregarEventosDaAPI();
+    
     // Embaralhar eventos em ordem aleatória
-    embaralharEventos();
+    const eventosSlide = EVENTS_DATA[0]; // Preservar slide inicial
+    const eventos = EVENTS_DATA.slice(1); // Pegar apenas os eventos
+
+    for (let i = eventos.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [eventos[i], eventos[j]] = [eventos[j], eventos[i]];
+    }
+
+    EVENTS_DATA = [eventosSlide, ...eventos]; // Recolocar slide inicial no início
     
     carregarHero();
     carregarGridEventos();

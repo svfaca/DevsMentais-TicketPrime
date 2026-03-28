@@ -55,12 +55,16 @@ await EnsureAuthSchemaAsync(connectionString);
 app.MapGet("/api/eventos/publico", async () =>
 {
     await using var connection = new NpgsqlConnection(connectionString);
-    var eventos = await connection.QueryAsync(
-        "SELECT Id, Nome, CapacidadeTotal, DataEvento, PrecoPadrao FROM Eventos ORDER BY DataEvento DESC");
+    var eventos = await connection.QueryAsync(@"
+        SELECT e.Id, e.Nome, e.CapacidadeTotal, e.DataEvento, e.PrecoPadrao 
+        FROM Eventos e
+        INNER JOIN Usuarios u ON e.CriadoPorCpf = u.Cpf
+        WHERE u.Ativa = TRUE
+        ORDER BY e.DataEvento DESC");
     return Results.Ok(eventos);
 })
 .WithName("ListarEventosPublicos")
-.WithDescription("Lista eventos para exibicao publica")
+.WithDescription("Lista eventos de admins ativos para exibicao publica")
 .Produces(200);
 
 app.MapGet("/api/eventos", async (HttpContext httpContext) =>
@@ -69,6 +73,14 @@ app.MapGet("/api/eventos", async (HttpContext httpContext) =>
     if (authError is not null) return authError;
 
     await using var connection = new NpgsqlConnection(connectionString);
+    
+    var adminAtivo = await connection.QueryFirstOrDefaultAsync(
+        "SELECT Ativa FROM Usuarios WHERE Cpf = @Cpf AND TipoConta = 'adm'",
+        new { Cpf = auth!.Cpf });
+    
+    if (adminAtivo is null || !(bool)adminAtivo.Ativa)
+        return Results.StatusCode(StatusCodes.Status403Forbidden);
+
     var eventos = await connection.QueryAsync(
         "SELECT Id, Nome, CapacidadeTotal, DataEvento, PrecoPadrao FROM Eventos WHERE CriadoPorCpf = @Cpf ORDER BY DataEvento DESC",
         new { Cpf = auth!.Cpf });
@@ -76,7 +88,7 @@ app.MapGet("/api/eventos", async (HttpContext httpContext) =>
     return Results.Ok(eventos);
 })
 .WithName("ListarMeusEventos")
-.WithDescription("Lista apenas os eventos do administrador autenticado")
+.WithDescription("Lista apenas os eventos do administrador autenticado (deve estar ativo)")
 .Produces(200).Produces(401).Produces(403);
 
 app.MapPost("/api/eventos", async (CriarEventoRequest request, HttpContext httpContext) =>
@@ -85,6 +97,14 @@ app.MapPost("/api/eventos", async (CriarEventoRequest request, HttpContext httpC
     if (authError is not null) return authError;
 
     await using var connection = new NpgsqlConnection(connectionString);
+    
+    var adminAtivo = await connection.QueryFirstOrDefaultAsync(
+        "SELECT Ativa FROM Usuarios WHERE Cpf = @Cpf AND TipoConta = 'adm'",
+        new { Cpf = auth!.Cpf });
+    
+    if (adminAtivo is null || !(bool)adminAtivo.Ativa)
+        return Results.StatusCode(StatusCodes.Status403Forbidden);
+
     await connection.ExecuteAsync(@"
         INSERT INTO Eventos (Nome, CapacidadeTotal, DataEvento, PrecoPadrao, CriadoPorCpf)
         VALUES (@Nome, @CapacidadeTotal, @DataEvento, @PrecoPadrao, @CriadoPorCpf)",
@@ -93,7 +113,7 @@ app.MapPost("/api/eventos", async (CriarEventoRequest request, HttpContext httpC
     return Results.Created("/api/eventos", null);
 })
 .WithName("CriarEvento")
-.WithDescription("Cria evento vinculado ao administrador autenticado")
+.WithDescription("Cria evento vinculado ao administrador autenticado (deve estar ativo)")
 .Produces(201).Produces(401).Produces(403);
 
 // ── CUPONS ───────────────────────────────────────────────────────────────────
@@ -527,8 +547,10 @@ static async Task EnsureAuthSchemaAsync(string connectionString)
             Nome TEXT NOT NULL,
             Email TEXT NOT NULL UNIQUE,
             SenhaHash TEXT,
-            TipoConta TEXT NOT NULL DEFAULT 'usuario'
+            TipoConta TEXT NOT NULL DEFAULT 'usuario',
+            Ativa BOOLEAN DEFAULT TRUE
         );
+        ALTER TABLE Usuarios ADD COLUMN IF NOT EXISTS Ativa BOOLEAN DEFAULT TRUE;
         CREATE TABLE IF NOT EXISTS Eventos (
             Id SERIAL PRIMARY KEY,
             Nome TEXT NOT NULL,
