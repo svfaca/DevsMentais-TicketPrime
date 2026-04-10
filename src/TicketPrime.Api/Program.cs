@@ -639,20 +639,14 @@ static string? NormalizeAccountType(string? value)
 
 static string? ResolveConnectionString(IConfiguration configuration)
 {
-    var configured = configuration.GetConnectionString("DefaultConnection")
-        ?? configuration.GetConnectionString("NeonDB")
-        ?? Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
-        ?? Environment.GetEnvironmentVariable("ConnectionStrings__NeonDB");
-
-    if (!string.IsNullOrWhiteSpace(configured))
-        return configured;
-
     var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL")
         ?? configuration["DATABASE_URL"];
 
-    return string.IsNullOrWhiteSpace(databaseUrl)
-        ? null
-        : BuildNpgsqlConnectionStringFromDatabaseUrl(databaseUrl);
+    if (!string.IsNullOrWhiteSpace(databaseUrl))
+        return BuildNpgsqlConnectionStringFromDatabaseUrl(databaseUrl);
+
+    return configuration.GetConnectionString("NeonDB")
+        ?? configuration.GetConnectionString("DefaultConnection");
 }
 
 static string BuildNpgsqlConnectionStringFromDatabaseUrl(string databaseUrl)
