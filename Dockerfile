@@ -7,6 +7,7 @@ COPY src/TicketPrime.Api/TicketPrime.Api.csproj ./src/TicketPrime.Api/
 RUN dotnet restore ./src/TicketPrime.Api/TicketPrime.Api.csproj
 
 COPY src/TicketPrime.Api/ ./src/TicketPrime.Api/
+COPY src/frontend/imagens/ ./src/TicketPrime.Api/wwwroot/imagens/
 
 RUN dotnet publish ./src/TicketPrime.Api/TicketPrime.Api.csproj \
     -c Release -o /out --no-restore

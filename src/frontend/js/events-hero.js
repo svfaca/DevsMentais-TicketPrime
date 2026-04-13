@@ -1,3 +1,6 @@
+// Configuração da API centralizada
+import { API_BASE_URL } from '../config/api.js';
+
 // Dados dos eventos (carregados da API)
 let EVENTS_DATA = [];
 
@@ -10,25 +13,14 @@ const FRONTEND_BASE_URL = (() => {
     const currentPath = window.location.pathname.replace(/\/[^/]*$/, '');
     return `${window.location.origin}${currentPath.replace(/\/paginas$/, '')}`;
 })();
-
-// Base URL do backend (API + arquivos estaticos)
-const API_BASE_URL = (() => {
-    const configuredUrl = localStorage.getItem('API_URL');
-    if (configuredUrl) {
-        return configuredUrl.replace(/\/+$/, '');
-    }
-
-    if (window.location.hostname === 'localhost') {
-        return 'http://localhost:5129';
-    }
-
-    return 'https://devsmentais-ticketprime.up.railway.app';
-})();
 const API_URL = `${API_BASE_URL}/api/eventos/publico`;
 
 function toAbsoluteImageUrl(path) {
     if (!path) return path;
     if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    if (path.startsWith('./')) {
+        path = path.substring(1);
+    }
     return `${API_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`;
 }
 

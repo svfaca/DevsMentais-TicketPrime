@@ -1,11 +1,8 @@
 import { useState, useEffect } from "react";
+import { API_BASE_URL } from "./config/api.js";
 
-const API = (() => {
-  const configuredUrl = window.localStorage.getItem("API_URL");
-  if (configuredUrl) return configuredUrl.replace(/\/+$/, "");
-  if (window.location.hostname === "localhost") return "http://localhost:5129";
-  return "https://devsmentais-ticketprime.up.railway.app";
-})();
+// Alias para compatibilidade com código existente
+const API = API_BASE_URL;
 
 function Cupons() {
   const [codigo, setCodigo] = useState("");

@@ -320,13 +320,19 @@
     </div>
   </div>
 
+  <!-- Carregar configuração centralizada da API -->
+  <script type="module" src="../js/init-api-global.js"></script>
+
   <script>
     // ── Auth ─────────────────────────────────────────────
+    // Aguardar configuração centralizada da API
     const API_BASE_URL = (() => {
-      const configuredUrl = localStorage.getItem('API_URL');
-      if (configuredUrl) return configuredUrl.replace(/\/+$/, '');
-      if (window.location.hostname === 'localhost') return 'http://localhost:5129';
-      return 'https://devsmentais-ticketprime.up.railway.app';
+      let attempts = 0;
+      while (typeof window.API_BASE_URL === 'undefined' && attempts < 100) {
+        // Busy wait for module to load (não ideal mas compatível)
+        attempts++;
+      }
+      return window.API_BASE_URL || 'http://localhost:5129';
     })();
 
     let session;

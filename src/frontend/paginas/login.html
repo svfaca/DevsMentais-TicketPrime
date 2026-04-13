@@ -54,20 +54,23 @@
 			</form>
 		</div>
 
-		<script>
-			const API_BASE_URL = (() => {
-				const configuredUrl = localStorage.getItem('API_URL');
-				if (configuredUrl) {
-					return configuredUrl.replace(/\/+$/, '');
-				}
-				if (window.location.hostname === 'localhost') {
-					return 'http://localhost:5129';
-				}
-				return 'https://devsmentais-ticketprime.up.railway.app';
-			})();
+		<!-- Carregar configuração centralizada da API -->
+		<script type="module" src="../js/init-api-global.js"></script>
 
-			// Injeta URL do fundo.jpg apontando para a API correta (evita 404 no Live Server porta 3000)
-			document.body.style.setProperty('--fundo-url', `url('${API_BASE_URL}/imagens/fundo.jpg')`);
+		<script>
+			// Aguardar carregamento do módulo que exponha window.API_BASE_URL
+			function waitForApiConfig(callback) {
+				if (typeof window.API_BASE_URL !== 'undefined') {
+					callback();
+				} else {
+					setTimeout(() => waitForApiConfig(callback), 10);
+				}
+			}
+
+			waitForApiConfig(() => {
+				// Injeta URL do fundo.jpg apontando para a API correta (evita 404 no Live Server porta 3000)
+				document.body.style.setProperty('--fundo-url', `url('${window.API_BASE_URL}/imagens/fundo.jpg')`);
+			});
 
 			let isRegisterMode = false;
 			const loginForm = document.getElementById('loginForm');

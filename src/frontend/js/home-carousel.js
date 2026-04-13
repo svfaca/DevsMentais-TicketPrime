@@ -1,9 +1,8 @@
-const API_BASE = (() => {
-  const configuredUrl = localStorage.getItem('API_URL');
-  if (configuredUrl) return configuredUrl.replace(/\/+$/, '');
-  if (window.location.hostname === 'localhost') return 'http://localhost:5129';
-  return 'https://devsmentais-ticketprime.up.railway.app';
-})();
+// Configuração da API centralizada
+import { API_BASE_URL } from '../config/api.js';
+
+// Alias para compatibilidade com código existente
+const API_BASE = API_BASE_URL;
 
 // Caminho relativo ao diretório do script (funciona de index.html e paginas/*.html)
 const _scriptDir = document.currentScript
