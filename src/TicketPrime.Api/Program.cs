@@ -46,21 +46,29 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "TicketPrime API v1");
-        c.RoutePrefix = string.Empty;
-    });
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "TicketPrime API v1");
+    c.RoutePrefix = string.Empty;
+});
 
 app.UseCors("AllowFrontend");
 app.UseStaticFiles();
 
+// ✅ HEALTH CHECK E ROTA RAIZ
+app.MapGet("/", () => Results.Ok(new { status = "API online", timestamp = DateTime.UtcNow }))
+    .WithName("HealthCheckRoot")
+    .WithDescription("Verifica se a API está respondendo");
+
+app.MapGet("/health", () => Results.Ok(new { ok = true, timestamp = DateTime.UtcNow }))
+    .WithName("HealthCheck")
+    .WithDescription("Health check endpoint");
+
 var connectionString = ResolveConnectionString(builder.Configuration)
     ?? throw new InvalidOperationException("Connection string nao encontrada. Configure 'ConnectionStrings:DefaultConnection' ou 'DATABASE_URL'.");
+
+app.Logger.LogInformation("🔥 DATABASE_URL detectada: {Conn}", connectionString);
 
 var tokenSecret = builder.Configuration["Auth:TokenSecret"] ?? "ticketprime-dev-token-secret-change-this";
 var bootstrapAdminKey = builder.Configuration["Auth:BootstrapAdminKey"] ?? "ticketprime-bootstrap-admin";
@@ -557,15 +565,10 @@ app.MapPost("/api/auth/login", async (LoginRequest request) =>
 .WithDescription("Realiza login com CPF/e-mail e senha")
 .Produces<LoginResponse>(200).Produces(401).Produces(400);
 
-var port = Environment.GetEnvironmentVariable("PORT");
-if (!string.IsNullOrWhiteSpace(port))
-{
-    app.Run($"http://0.0.0.0:{port}");
-}
-else
-{
-    app.Run();
-}
+// ✅ PORTA CORRIGIDA - Railway define PORT em runtime
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+app.Logger.LogInformation("🚀 App será executada na porta: {Port}", port);
+app.Run($"http://0.0.0.0:{port}");
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 

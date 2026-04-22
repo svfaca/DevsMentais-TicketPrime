@@ -16,6 +16,7 @@ FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
 COPY --from=build /out .
 
-ENV ASPNETCORE_URLS=http://+:${PORT:-8080}
+# ✅ ASPNETCORE_ENVIRONMENT definido para produção
+ENV ASPNETCORE_ENVIRONMENT=Production
 
 ENTRYPOINT ["dotnet", "TicketPrime.Api.dll"]
