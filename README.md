@@ -90,30 +90,37 @@ Simplesmente abrir `src/frontend/index.html` em um navegador web.
 
 ## 📚 Endpoints da API
 
-### Autenticação
+### ✅ Endpoints Obrigatórios da Avaliação (AV1)
+- `GET /api/eventos` - Listar eventos disponíveis (público)
+- `POST /api/eventos` - Criar evento (admin)
+- `POST /api/cupons` - Criar cupom (admin)
+- `POST /api/usuarios` - Criar usuário (público)
+
+### Autenticação (Endpoints Adicionais)
 - `POST /api/auth/register` - Registrar novo usuário
 - `POST /api/auth/login` - Login com CPF e senha
 - `POST /api/auth/bootstrap-admin` - Criar primeiro admin
 - `POST /api/auth/register-admin` - Criar novo admin (apenas admin)
 
-### Usuários
-- `POST /api/usuarios` - Criar usuário
-- `GET /api/me` - Dados do usuário autenticado
+### Endpoints Adicionais
 
-### Eventos
-- `GET /api/eventos/publico` - Listar eventos (público)
-- `GET /api/eventos` - Listar eventos (autenticado)
-- `POST /api/eventos` - Criar evento (admin)
+**Usuários**
+- `GET /api/me` - Dados do usuário autenticado
+- `PUT /api/me` - Atualizar perfil do usuário
+- `DELETE /api/me` - Deletar conta do usuário
+- `POST /api/me/foto` - Upload de foto de perfil
+
+**Eventos**
+- `GET /api/eventos/publico` - Listar eventos de admins ativos (não obrigatório)
 - `GET /api/eventos/{id}/assentos-ocupados` - Verificar assentos
 
-### Reservas
+**Reservas**
 - `POST /api/reservas` - Criar reserva
 - `GET /api/reservas` - Listar reservas do usuário
 - `DELETE /api/reservas/{id}` - Cancelar reserva
 
-### Cupons
-- `GET /api/cupons` - Listar cupons
-- `POST /api/cupons` - Criar cupom (admin)
+**Cupons**
+- `GET /api/cupons` - Listar cupons (admin)
 
 ## 🎨 Features Frontend
 
