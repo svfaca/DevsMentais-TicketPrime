@@ -92,34 +92,31 @@ app.MapGet("/api/eventos/publico", async () =>
 .WithDescription("Lista eventos de admins ativos para exibicao publica")
 .Produces(200);
 
-app.MapGet("/api/eventos", async (HttpContext httpContext) =>
+app.MapGet("/api/eventos", async () =>
 {
-    var authError = TryAuthenticate(httpContext, tokenSecret, out var auth, "adm");
-    if (authError is not null) return authError;
-
     await using var connection = new NpgsqlConnection(connectionString);
-    
-    var adminAtivo = await connection.QueryFirstOrDefaultAsync(
-        "SELECT Ativa FROM Usuarios WHERE Cpf = @Cpf AND TipoConta = 'adm'",
-        new { Cpf = auth!.Cpf });
-    
-    if (adminAtivo is null || !(bool)adminAtivo.Ativa)
-        return Results.StatusCode(StatusCodes.Status403Forbidden);
-
-    var eventos = await connection.QueryAsync(
-        "SELECT Id, Nome, CapacidadeTotal, DataEvento, PrecoPadrao, ImagemUrl FROM Eventos WHERE CriadoPorCpf = @Cpf ORDER BY DataEvento DESC",
-        new { Cpf = auth!.Cpf });
-
+    var eventos = await connection.QueryAsync(@"
+        SELECT Id, Nome, CapacidadeTotal, DataEvento, PrecoPadrao, ImagemUrl
+        FROM Eventos
+        ORDER BY DataEvento DESC");
     return Results.Ok(eventos);
 })
-.WithName("ListarMeusEventos")
-.WithDescription("Lista apenas os eventos do administrador autenticado (deve estar ativo)")
-.Produces(200).Produces(401).Produces(403);
+.AllowAnonymous()
+.WithName("ListarEventos")
+.WithDescription("Lista todos os eventos disponíveis")
+.Produces(200);
 
 app.MapPost("/api/eventos", async (CriarEventoRequest request, HttpContext httpContext) =>
 {
     var authError = TryAuthenticate(httpContext, tokenSecret, out var auth, "adm");
     if (authError is not null) return authError;
+
+    if (string.IsNullOrWhiteSpace(request.Nome))
+        return Results.BadRequest("Nome do evento é obrigatório");
+    if (request.CapacidadeTotal <= 0)
+        return Results.BadRequest("Capacidade deve ser maior que zero");
+    if (request.PrecoPadrao < 0)
+        return Results.BadRequest("Preço não pode ser negativo");
 
     await using var connection = new NpgsqlConnection(connectionString);
     
@@ -163,6 +160,13 @@ app.MapPost("/api/cupons", async (CriarCupomRequest request, HttpContext httpCon
 {
     var authError = TryAuthenticate(httpContext, tokenSecret, out var auth, "adm");
     if (authError is not null) return authError;
+
+    if (string.IsNullOrWhiteSpace(request.Codigo))
+        return Results.BadRequest("Código do cupom é obrigatório");
+    if (request.PorcentagemDesconto < 0 || request.PorcentagemDesconto > 100)
+        return Results.BadRequest("Desconto deve estar entre 0% e 100%");
+    if (request.ValorMinimoRegra < 0)
+        return Results.BadRequest("Valor mínimo não pode ser negativo");
 
     await using var connection = new NpgsqlConnection(connectionString);
     await connection.ExecuteAsync(@"
@@ -466,11 +470,8 @@ app.MapDelete("/api/me", async (HttpContext httpContext) =>
 .WithDescription("Deleta a conta do usuario autenticado")
 .Produces(200).Produces(401);
 
-app.MapPost("/api/usuarios", async (CriarUsuarioRequest request, HttpContext httpContext) =>
+app.MapPost("/api/usuarios", async (CriarUsuarioRequest request) =>
 {
-    var authError = TryAuthenticate(httpContext, tokenSecret, out _, "adm");
-    if (authError is not null) return authError;
-
     var tipoConta = NormalizeAccountType(request.TipoConta);
     if (tipoConta is null)
         return Results.BadRequest("TipoConta invalido. Use 'usuario' ou 'adm'.");
@@ -478,9 +479,10 @@ app.MapPost("/api/usuarios", async (CriarUsuarioRequest request, HttpContext htt
     return await CreateAccountAsync(connectionString, new AccountCreateData(
         request.Cpf, request.Nome, request.Email, request.Senha, tipoConta));
 })
+.AllowAnonymous()
 .WithName("CriarUsuario")
-.WithDescription("Cria usuario ou administrador (somente administrador autenticado)")
-.Produces(201).Produces(400).Produces(401).Produces(403);
+.WithDescription("Cria usuario ou administrador")
+.Produces(201).Produces(400);
 
 app.MapPost("/api/auth/register", async (RegistrarRequest request) =>
 {
