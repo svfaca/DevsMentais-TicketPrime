@@ -153,7 +153,7 @@ dotnet test --verbosity normal
 
 ## 👥 Autores
 
-- **Desenvolvedores:** @svfaca, @patrickmqs, @MiriamSsntos e @jvdellolio.
+- **Desenvolvedores:** @jvdellolio, @MiriamSsntos, @patrickmqs e @svfaca.
 
 - **Disciplina:** Engenharia de Software - Projeto TicketPrime
 
