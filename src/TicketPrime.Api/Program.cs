@@ -202,28 +202,75 @@ app.MapGet("/api/eventos/{id:int}/assentos-ocupados", async (int id) =>
 
 app.MapPost("/api/reservas", async (CriarReservaRequest request, HttpContext httpContext) =>
 {
-    var authError = TryAuthenticate(httpContext, tokenSecret, out var auth);
-    if (authError is not null) return authError;
+    string? usuarioCpf = request.UsuarioCpf;
+
+    if (string.IsNullOrWhiteSpace(usuarioCpf))
+    {
+        var authError = TryAuthenticate(httpContext, tokenSecret, out var auth);
+        if (authError is not null) return authError;
+        usuarioCpf = auth!.Cpf;
+    }
+
+    if (string.IsNullOrWhiteSpace(usuarioCpf))
+        return Results.BadRequest("UsuarioCpf e obrigatorio.");
+
+    var cpfNormalizado = NormalizeCpf(usuarioCpf);
 
     await using var connection = new NpgsqlConnection(connectionString);
 
-    // Busca o evento
-    var evento = await connection.QueryFirstOrDefaultAsync(
-        "SELECT id, nome, capacidadetotal, precopadrao FROM Eventos WHERE Id = @Id",
+    // [Regra R1] Validação de Integridade: UsuarioCpf ou o EventoId não existirem
+    var usuarioExiste = await connection.ExecuteScalarAsync<bool>(
+        "SELECT EXISTS(SELECT 1 FROM Usuarios WHERE Cpf = @Cpf)",
+        new { Cpf = cpfNormalizado });
+    
+    if (!usuarioExiste)
+        return Results.BadRequest("UsuarioCpf nao existe.");
+
+    var evento = await connection.QueryFirstOrDefaultAsync<Evento>(
+        "SELECT Id, Nome, CapacidadeTotal, PrecoPadrao FROM Eventos WHERE Id = @Id",
         new { Id = request.EventoId });
 
     if (evento is null)
-        return Results.NotFound("Evento nao encontrado.");
+        return Results.BadRequest("EventoId nao existe.");
 
-    // Verifica vagas disponíveis
+    // [Regra R2] Limite por CPF: O mesmo CPF não pode ter mais de 2 reservas para o mesmo EventoId
+    var reservasCpf = await connection.QueryFirstAsync<int>(
+        "SELECT COUNT(1) FROM Reservas WHERE EventoId = @EventoId AND UsuarioCpf = @Cpf AND Status != 'cancelada'",
+        new { EventoId = request.EventoId, Cpf = cpfNormalizado });
+
+    if (reservasCpf >= 2)
+        return Results.BadRequest("O mesmo CPF nao pode ter mais de 2 reservas para o mesmo EventoId.");
+
+    // [Regra R3] Controle de Estoque: O número de reservas já existentes for igual à CapacidadeTotal, compra bloqueada
     var reservados = await connection.QueryFirstAsync<int>(
         "SELECT COUNT(1) FROM Reservas WHERE EventoId = @EventoId AND Status != 'cancelada'",
         new { EventoId = request.EventoId });
 
-    if (reservados >= (int)evento.capacidadetotal)
+    if (reservados >= evento.CapacidadeTotal)
         return Results.BadRequest("Evento sem vagas disponiveis.");
 
-    // Verifica se algum dos assentos solicitados já está ocupado
+    // [Regra R4] Motor de Cupons: Buscar o cupom no banco. O desconto só é aplicado sobre o PrecoPadrao se o preço do evento for maior ou igual ao ValorMinimoRegra do cupom.
+    decimal precoFinal = evento.PrecoPadrao;
+    string? codigoCupomAplicado = null;
+
+    if (!string.IsNullOrWhiteSpace(request.CodigoCupom))
+    {
+        var cupom = await connection.QueryFirstOrDefaultAsync<Cupom>(
+            "SELECT Codigo, PorcentagemDesconto, ValorMinimoRegra FROM Cupons WHERE Codigo = @Codigo",
+            new { Codigo = request.CodigoCupom.Trim().ToUpperInvariant() });
+
+        if (cupom is null)
+            return Results.BadRequest("Cupom invalido.");
+
+        if (evento.PrecoPadrao < cupom.ValorMinimoRegra)
+            return Results.BadRequest($"Preco minimo para este cupom e R$ {cupom.ValorMinimoRegra:F2}.");
+
+        var desconto = evento.PrecoPadrao * (cupom.PorcentagemDesconto / 100m);
+        precoFinal = evento.PrecoPadrao - desconto;
+        codigoCupomAplicado = cupom.Codigo;
+    }
+
+    // Assento check (original logic fallback)
     if (!string.IsNullOrWhiteSpace(request.Assento))
     {
         var assentosRow = await connection.QueryAsync<string>(
@@ -240,27 +287,6 @@ app.MapPost("/api/reservas", async (CriarReservaRequest request, HttpContext htt
             return Results.BadRequest($"O assento '{conflito}' ja esta reservado.");
     }
 
-    // Calcula preço com cupom opcional
-    decimal precoFinal = (decimal)evento.precopadrao;
-    string? codigoCupomAplicado = null;
-
-    if (!string.IsNullOrWhiteSpace(request.CodigoCupom))
-    {
-        var cupom = await connection.QueryFirstOrDefaultAsync(
-            "SELECT Codigo, PorcentagemDesconto, ValorMinimoRegra FROM Cupons WHERE Codigo = @Codigo",
-            new { Codigo = request.CodigoCupom.Trim().ToUpperInvariant() });
-
-        if (cupom is null)
-            return Results.BadRequest("Cupom invalido.");
-
-        if (precoFinal < (decimal)cupom.ValorMinimoRegra)
-            return Results.BadRequest($"Preco minimo para este cupom e R$ {cupom.ValorMinimoRegra:F2}.");
-
-        var desconto = precoFinal * ((decimal)cupom.PorcentagemDesconto / 100m);
-        precoFinal -= desconto;
-        codigoCupomAplicado = (string)cupom.Codigo;
-    }
-
     // Cria a reserva
     var reservaId = await connection.QueryFirstAsync<int>(@"
         INSERT INTO Reservas (EventoId, UsuarioCpf, PrecoFinal, CupomCodigo, Status, CriadoEm, Assento)
@@ -269,7 +295,7 @@ app.MapPost("/api/reservas", async (CriarReservaRequest request, HttpContext htt
         new
         {
             EventoId = request.EventoId,
-            UsuarioCpf = auth!.Cpf,
+            UsuarioCpf = cpfNormalizado,
             PrecoFinal = precoFinal,
             CupomCodigo = codigoCupomAplicado,
             Assento = string.IsNullOrWhiteSpace(request.Assento) ? null : request.Assento.Trim()
@@ -279,16 +305,35 @@ app.MapPost("/api/reservas", async (CriarReservaRequest request, HttpContext htt
     {
         Id = reservaId,
         EventoId = request.EventoId,
-        NomeEvento = (string)evento.nome,
-        PrecoOriginal = (decimal)evento.precopadrao,
+        NomeEvento = evento.Nome,
+        PrecoOriginal = evento.PrecoPadrao,
         PrecoFinal = precoFinal,
         CupomAplicado = codigoCupomAplicado,
         Status = "confirmada"
     });
 })
 .WithName("CriarReserva")
-.WithDescription("Reserva ingresso para um evento, com cupom opcional")
-.Produces(201).Produces(400).Produces(401).Produces(404);
+.WithDescription("Reserva ingresso para um evento com validacoes complexas")
+.Produces(201).Produces(400).Produces(401);
+
+app.MapGet("/api/reservas/{cpf}", async (string cpf) =>
+{
+    var cpfNormalizado = NormalizeCpf(cpf);
+    await using var connection = new NpgsqlConnection(connectionString);
+    var reservas = await connection.QueryAsync(@"
+        SELECT r.Id, r.EventoId, e.Nome AS NomeEvento, e.DataEvento,
+               r.PrecoFinal, r.CupomCodigo, r.Status, r.CriadoEm, r.Assento
+        FROM Reservas r
+        INNER JOIN Eventos e ON e.Id = r.EventoId
+        WHERE r.UsuarioCpf = @Cpf
+        ORDER BY r.CriadoEm DESC",
+        new { Cpf = cpfNormalizado });
+
+    return Results.Ok(reservas);
+})
+.WithName("ReservasPorCpf")
+.WithDescription("Traz as reservas de um cliente usando CPF com INNER JOIN")
+.Produces(200);
 
 app.MapGet("/api/reservas", async (HttpContext httpContext) =>
 {
@@ -831,7 +876,7 @@ static async Task EnsureAuthSchemaAsync(string connectionString, ILogger logger)
 
 record CriarEventoRequest(string Nome, int CapacidadeTotal, DateTime DataEvento, decimal PrecoPadrao, string? ImagemUrl);
 record CriarCupomRequest(string Codigo, decimal PorcentagemDesconto, decimal ValorMinimoRegra);
-record CriarReservaRequest(int EventoId, string? CodigoCupom, string? Assento);
+record CriarReservaRequest(int EventoId, string? UsuarioCpf, string? CodigoCupom, string? Assento);
 record CriarUsuarioRequest(string Cpf, string Nome, string Email, string Senha, string TipoConta);
 record RegistrarRequest(string Nome, string Cpf, string Email, string Senha, string? TipoConta);
 record RegistrarAdminRequest(string Nome, string Cpf, string Email, string Senha);
@@ -851,4 +896,19 @@ class UsuarioLogin
     public string? FotoPerfil { get; set; }
     public string? SenhaHash { get; set; }
     public string TipoConta { get; set; } = "usuario";
+}
+
+public class Evento
+{
+    public int Id { get; set; }
+    public string Nome { get; set; } = string.Empty;
+    public int CapacidadeTotal { get; set; }
+    public decimal PrecoPadrao { get; set; }
+}
+
+public class Cupom
+{
+    public string Codigo { get; set; } = string.Empty;
+    public decimal PorcentagemDesconto { get; set; }
+    public decimal ValorMinimoRegra { get; set; }
 }
