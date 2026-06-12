@@ -30,7 +30,7 @@ TicketPrime/
 │   │   │   ├── theme-toggle.js       # Toggle de tema (light/dark)
 │   │   │   └── home-carousel.js
 │   │   └── imagens/
-│   └── TicketPrime.Api/       # Backend API
+│   └── Backend/              # Backend API
 │       ├── Program.cs          # Configuração e rotas da API
 │       └── appsettings.json    # Configuração de ambiente
 ├── tests/
@@ -59,7 +59,7 @@ cd DevsMentais-TicketPrime
 
 2. **Configurar banco de dados**
 ```bash
-# Editar src/TicketPrime.Api/appsettings.json com suas credenciais PostgreSQL
+# Editar src/Backend/appsettings.json com suas credenciais PostgreSQL
 # Exemplo:
 {
   "ConnectionStrings": {
@@ -70,7 +70,7 @@ cd DevsMentais-TicketPrime
 
 3. **Executar API**
 ```bash
-cd src/TicketPrime.Api
+cd src/Backend
 dotnet restore
 dotnet run
 ```
@@ -83,6 +83,74 @@ Swagger UI: `http://localhost:5000/swagger`
 cd tests/TicketPrime.Tests
 dotnet test
 ```
+
+### Database Setup - Conectar Frontend com Banco de Dados
+
+A partir do banco criado, o frontend busca eventos dinamicamente da API:
+
+1. **Verificar Endpoint da API**
+```bash
+# Abrir no navegador:
+http://localhost:5129/api/eventos/publico
+# Deve retornar JSON com eventos do banco
+```
+
+2. **Servir Frontend**
+```bash
+# Opção 1: Usar Live Server do VS Code
+# Clique direito em src/frontend/index.html → Open with Live Server
+
+# Opção 2: Usar Python
+cd src/frontend
+python -m http.server 8000
+# Acesse http://localhost:8000
+```
+
+3. **Validar Integração**
+- ✅ Verifique se o hero e grid de eventos carregam
+- ✅ Verifique o console do navegador (F12) para erros
+- ✅ Verifique se os eventos vêm do banco de dados (não estão hardcoded)
+
+### Frontend Configuration - API Centralizada
+
+A configuração da API é centralizada em um arquivo único para evitar duplicação:
+
+**Estrutura:**
+```
+src/frontend/
+├── config/
+│   └── api.js                    ← 🔑 FONTE ÚNICA DA CONFIGURAÇÃO
+├── js/
+│   ├── init-api-global.js        ← Expõe config como global para HTMLs
+│   ├── events-hero.js            ← Importa de config/api.js
+│   ├── home-carousel.js          ← Importa de config/api.js
+```
+
+**Como usar em um JS/JSX module novo:**
+```javascript
+import { API_BASE_URL } from '../config/api.js';
+
+fetch(`${API_BASE_URL}/api/eventos`)
+  .then(r => r.json())
+  .then(data => console.log(data));
+```
+
+**Como usar em um HTML novo:**
+```html
+<!-- Adicionar no início do <body> -->
+<script type="module" src="../js/init-api-global.js"></script>
+
+<!-- Depois usar normalmente -->
+<script>
+  console.log(window.API_BASE_URL);
+  fetch(`${window.API_BASE_URL}/api/eventos`);
+</script>
+```
+
+**Fallback automático:**
+- localStorage.getItem('API_URL') → permite override via localStorage
+- Produção: URL do Railway
+- Desenvolvimento local: `http://localhost:5129`
 
 ### Frontend
 

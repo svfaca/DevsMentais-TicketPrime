@@ -2,14 +2,14 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /app
 
 COPY TicketPrime.sln ./
-COPY src/TicketPrime.Api/TicketPrime.Api.csproj ./src/TicketPrime.Api/
+COPY src/Backend/Backend.csproj ./src/Backend/
 
-RUN dotnet restore ./src/TicketPrime.Api/TicketPrime.Api.csproj
+RUN dotnet restore ./src/Backend/Backend.csproj
 
-COPY src/TicketPrime.Api/ ./src/TicketPrime.Api/
-COPY src/frontend/imagens/ ./src/TicketPrime.Api/wwwroot/imagens/
+COPY src/Backend/ ./src/Backend/
+COPY src/frontend/imagens/ ./src/Backend/wwwroot/imagens/
 
-RUN dotnet publish ./src/TicketPrime.Api/TicketPrime.Api.csproj \
+RUN dotnet publish ./src/Backend/Backend.csproj \
     -c Release -o /out --no-restore
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
@@ -19,4 +19,4 @@ COPY --from=build /out .
 # ✅ ASPNETCORE_ENVIRONMENT definido para produção
 ENV ASPNETCORE_ENVIRONMENT=Production
 
-ENTRYPOINT ["dotnet", "TicketPrime.Api.dll"]
+ENTRYPOINT ["dotnet", "Backend.dll"]

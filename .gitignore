@@ -12,5 +12,7 @@ TestResults/
 
 src/TicketPrime.Api/bin/
 src/TicketPrime.Api/obj/
+src/Backend/bin/
+src/Backend/obj/
 tests/TicketPrime.Tests/bin/
 tests/TicketPrime.Tests/obj/
