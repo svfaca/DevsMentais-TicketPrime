@@ -68,12 +68,19 @@ app.MapGet("/health", () => Results.Ok(new { ok = true, timestamp = DateTime.Utc
 var connectionString = ResolveConnectionString(builder.Configuration)
     ?? throw new InvalidOperationException("Connection string nao encontrada. Configure 'ConnectionStrings:DefaultConnection' ou 'DATABASE_URL'.");
 
-app.Logger.LogInformation("🔥 DATABASE_URL detectada: {Conn}", connectionString);
+app.Logger.LogInformation("Conexao PostgreSQL configurada: {Conn}", ExtractConnectionInfo(connectionString));
 
 var tokenSecret = builder.Configuration["Auth:TokenSecret"] ?? "ticketprime-dev-token-secret-change-this";
 var bootstrapAdminKey = builder.Configuration["Auth:BootstrapAdminKey"] ?? "ticketprime-bootstrap-admin";
 
-await EnsureAuthSchemaAsync(connectionString, app.Logger);
+try
+{
+    await EnsureAuthSchemaAsync(connectionString, app.Logger);
+}
+catch (Exception ex)
+{
+    app.Logger.LogWarning(ex, "Nao foi possivel preparar o esquema no banco durante a inicializacao. A API vai continuar subindo, mas as rotas que dependem do banco podem falhar.");
+}
 
 // ── EVENTOS ──────────────────────────────────────────────────────────────────
 
@@ -644,14 +651,19 @@ static string? NormalizeAccountType(string? value)
 
 static string? ResolveConnectionString(IConfiguration configuration)
 {
+    var configuredConnectionString = configuration.GetConnectionString("DefaultConnection")
+        ?? configuration.GetConnectionString("NeonDB");
+
+    if (!string.IsNullOrWhiteSpace(configuredConnectionString))
+        return configuredConnectionString;
+
     var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL")
         ?? configuration["DATABASE_URL"];
 
     if (!string.IsNullOrWhiteSpace(databaseUrl))
         return BuildNpgsqlConnectionStringFromDatabaseUrl(databaseUrl);
 
-    return configuration.GetConnectionString("NeonDB")
-        ?? configuration.GetConnectionString("DefaultConnection");
+    return null;
 }
 
 static string BuildNpgsqlConnectionStringFromDatabaseUrl(string databaseUrl)
