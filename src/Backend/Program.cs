@@ -88,7 +88,7 @@ app.MapGet("/api/eventos/publico", async (string? categoria) =>
 {
     var categoriaNormalizada = NormalizeEventCategory(categoria);
     if (!string.IsNullOrWhiteSpace(categoria) && categoriaNormalizada is null)
-        return Results.BadRequest("Categoria invalida. Use: musicais, cinema, eventos-diversos ou viagens.");
+        return Results.BadRequest("Categoria invalida. Use: musicais, cinema, eventos-diversos, copa ou viagens.");
 
     await using var connection = new NpgsqlConnection(connectionString);
     var eventos = categoriaNormalizada is null
@@ -117,7 +117,7 @@ app.MapGet("/api/eventos", async (string? categoria) =>
 {
     var categoriaNormalizada = NormalizeEventCategory(categoria);
     if (!string.IsNullOrWhiteSpace(categoria) && categoriaNormalizada is null)
-        return Results.BadRequest("Categoria invalida. Use: musicais, cinema, eventos-diversos ou viagens.");
+        return Results.BadRequest("Categoria invalida. Use: musicais, cinema, eventos-diversos, copa ou viagens.");
 
     await using var connection = new NpgsqlConnection(connectionString);
     var eventos = categoriaNormalizada is null
@@ -144,6 +144,7 @@ app.MapGet("/api/eventos/categorias", () => Results.Ok(new[]
     "musicais",
     "cinema",
     "eventos-diversos",
+    "copa",
     "viagens"
 }))
 .AllowAnonymous()
@@ -165,7 +166,7 @@ app.MapPost("/api/eventos", async (CriarEventoRequest request, HttpContext httpC
 
     var categoriaNormalizada = NormalizeEventCategory(request.Categoria);
     if (!string.IsNullOrWhiteSpace(request.Categoria) && categoriaNormalizada is null)
-        return Results.BadRequest("Categoria invalida. Use: musicais, cinema, eventos-diversos ou viagens.");
+        return Results.BadRequest("Categoria invalida. Use: musicais, cinema, eventos-diversos, copa ou viagens.");
 
     categoriaNormalizada ??= "musicais";
 
@@ -212,7 +213,7 @@ app.MapPut("/api/eventos/{id:int}", async (int id, AtualizarEventoRequest reques
 
     var categoriaNormalizada = NormalizeEventCategory(request.Categoria);
     if (!string.IsNullOrWhiteSpace(request.Categoria) && categoriaNormalizada is null)
-        return Results.BadRequest("Categoria invalida. Use: musicais, cinema, eventos-diversos ou viagens.");
+        return Results.BadRequest("Categoria invalida. Use: musicais, cinema, eventos-diversos, copa ou viagens.");
 
     categoriaNormalizada ??= "musicais";
 
@@ -1275,7 +1276,7 @@ static string? NormalizeEventCategory(string? value)
 {
     if (string.IsNullOrWhiteSpace(value)) return null;
     var normalized = value.Trim().ToLowerInvariant();
-    return normalized is "musicais" or "cinema" or "eventos-diversos" or "viagens"
+    return normalized is "musicais" or "cinema" or "eventos-diversos" or "copa" or "viagens"
         ? normalized
         : null;
 }

@@ -1,196 +1,181 @@
 # TicketPrime
 
-Plataforma de venda de ingressos para categorias nichadas (musicais, cinema, eventos-diversos e viagens). Sistema completo com frontend responsivo, API REST em ASP.NET Core e banco de dados PostgreSQL.
+Plataforma de ingressos focada em categorias nichadas com experiência visual dinâmica na home e nas páginas de categoria.
 
-## 🚀 Stack Tecnológico
+Categorias atuais:
+- musicais
+- cinema
+- eventos-diversos
+- viagens
 
-### Backend
-- **Framework:** ASP.NET Core (.NET 8+)
-- **ORM/QueryBuilder:** Dapper
-- **Banco de Dados:** PostgreSQL (Neon)
-- **Autenticação:** JWT (JSON Web Tokens)
-- **API Documentation:** Swagger/OpenAPI
+## Stack
 
-### Frontend
-- **HTML5** com estrutura semântica
-- **CSS3** com temas (light/dark mode)
-- **JavaScript Vanilla** para interatividade
-- **Responsivo** para desktop e mobile
+Backend:
+- ASP.NET Core (.NET 8)
+- Dapper
+- PostgreSQL (Neon)
+- JWT
 
-## 📁 Estrutura do Projeto
+Frontend:
+- HTML + CSS + JavaScript Vanilla
+- Hero dinâmico por categoria
+- Troca dinâmica de logo e imagens
 
-```
-TicketPrime/
-├── src/
-│   ├── frontend/              # Frontend (HTML/CSS/JS)
-│   │   ├── index.html
-│   │   ├── style.css
-│   │   ├── js/
-│   │   │   ├── events-hero.js        # Carousel dinâmico de eventos
-│   │   │   ├── theme-toggle.js       # Toggle de tema (light/dark)
-│   │   │   └── home-carousel.js
-│   │   └── imagens/
-│   └── Backend/              # Backend API
-│       ├── Program.cs          # Configuração e rotas da API
-│       └── appsettings.json    # Configuração de ambiente
-├── tests/
-│   └── TicketPrime.Tests/     # Testes unitários
-├── docs/
-│   ├── requisitos.md          # Histórias de usuário e critérios BDD
-│   └── Avaliacoes_ALUNO.pdf
-└── db/
-    └── ticketprime.sql        # Script de criação do banco
-```
+## Estrutura
 
-## ⚙️ Configuração e Execução
+Principais caminhos do projeto:
+- [src/Backend](src/Backend)
+- [src/frontend](src/frontend)
+- [db](db)
+- [tests/TicketPrime.Tests](tests/TicketPrime.Tests)
+- [docs](docs)
 
-### Pré-requisitos
-- .NET 8 ou superior
-- PostgreSQL 12+
-- Node.js/npm (opcional, se usar ferramentas frontend)
+Arquivos importantes:
+- [src/Backend/Program.cs](src/Backend/Program.cs)
+- [src/frontend/index.html](src/frontend/index.html)
+- [src/frontend/style.css](src/frontend/style.css)
+- [src/frontend/js/events-hero.js](src/frontend/js/events-hero.js)
+- [src/frontend/paginas/categoria.html](src/frontend/paginas/categoria.html)
 
-### Backend Setup
+## Executando Localmente
 
-1. **Clonar repositório**
+Pré-requisitos:
+- .NET SDK 8+
+- PostgreSQL
+
+1. Clonar o repositório
+
 ```bash
 git clone https://github.com/svfaca/DevsMentais-TicketPrime.git
 cd DevsMentais-TicketPrime
 ```
 
-2. **Configurar banco de dados**
-```bash
-# Editar src/Backend/appsettings.json com suas credenciais PostgreSQL
-# Exemplo:
-{
-  "ConnectionStrings": {
-    "NeonDB": "Server=endpoint.neon.tech;Database=ticketprime;User Id=user;Password=pass;"
-  }
-}
-```
+2. Configurar banco e connection string
 
-3. **Executar API**
+- Execute os scripts da pasta [db](db) conforme necessário.
+- Configure a string de conexão (recomendado via User Secrets no backend).
+
+3. Subir o backend
+
 ```bash
 cd src/Backend
 dotnet restore
 dotnet run
 ```
 
-A API estará disponível em: `http://localhost:5000`
-Swagger UI: `http://localhost:5000/swagger`
+Ambiente local esperado:
+- API: http://localhost:8080
+- Swagger: http://localhost:8080/swagger
 
-4. **Executar testes**
-```bash
-cd tests/TicketPrime.Tests
-dotnet test
-```
+4. Abrir o frontend
 
-### Frontend
+- Home: [src/frontend/index.html](src/frontend/index.html)
+- Categorias: [src/frontend/paginas/categoria.html](src/frontend/paginas/categoria.html)
 
-Simplesmente abrir `src/frontend/index.html` em um navegador web.
+Observação:
+- O frontend usa [src/frontend/config/api.js](src/frontend/config/api.js) para apontar para http://localhost:8080 em localhost/127.0.0.1.
 
-## 📚 Endpoints da API
+## Funcionalidades Recentes
 
-### ✅ Endpoints Obrigatórios da Avaliação (AV1)
-- `GET /api/eventos` - Listar eventos disponíveis (público)
-- `POST /api/eventos` - Criar evento (admin)
-- `POST /api/cupons` - Criar cupom (admin)
-- `POST /api/usuarios` - Criar usuário (público)
+- Hero da home com visual premium e cores dinâmicas por imagem.
+- Hero da categoria com paridade visual da home.
+- Múltiplas imagens rotativas no hero para:
+  - home (slide inicial)
+  - viagens
+- Troca dinâmica de logo:
+  - home: muda conforme slide/categoria ativa
+  - categoria: usa logo específica da categoria
+- Normalização de imagem para suportar variações de campo da API (ex.: imagemurl, imagemUrl).
 
-### Autenticação (Endpoints Adicionais)
-- `POST /api/auth/register` - Registrar novo usuário
-- `POST /api/auth/login` - Login com CPF e senha
-- `POST /api/auth/bootstrap-admin` - Criar primeiro admin
-- `POST /api/auth/register-admin` - Criar novo admin (apenas admin)
+Assets utilizados:
+- Logos em [src/frontend/imagens](src/frontend/imagens)
+- Imagens da home em [src/frontend/imagens/home](src/frontend/imagens/home)
+- Imagens de categorias em [src/frontend/imagens/categorias](src/frontend/imagens/categorias)
 
-### Endpoints Adicionais
+## Endpoints Principais
 
-**Usuários**
-- `GET /api/me` - Dados do usuário autenticado
-- `PUT /api/me` - Atualizar perfil do usuário
-- `DELETE /api/me` - Deletar conta do usuário
-- `POST /api/me/foto` - Upload de foto de perfil
+Autenticação:
+- POST /api/auth/register
+- POST /api/auth/login
+- POST /api/auth/bootstrap-admin
+- POST /api/auth/register-admin
 
-**Eventos**
-- `GET /api/eventos/publico` - Listar eventos de admins ativos (não obrigatório)
-- `GET /api/eventos/publico?categoria=musicais|cinema|eventos-diversos|viagens` - Filtrar eventos públicos por categoria
-- `GET /api/eventos?categoria=musicais|cinema|eventos-diversos|viagens` - Filtrar eventos por categoria
-- `GET /api/eventos/categorias` - Listar categorias válidas para eventos
-- `PUT /api/eventos/{id}` - Atualizar evento (admin dono do evento)
-- `DELETE /api/eventos/{id}` - Inativar evento (exclusão lógica, admin dono do evento)
-- `GET /api/eventos/{id}/assentos-ocupados` - Verificar assentos
+Perfil:
+- GET /api/me
+- PUT /api/me
+- DELETE /api/me
+- POST /api/me/foto
 
-**Viagens (detalhes por evento)**
-- `GET /api/eventos/{eventoId}/viagem` - Consultar detalhes de viagem (evento da categoria viagens)
-- `PUT /api/eventos/{eventoId}/viagem` - Criar/atualizar detalhes de viagem (admin dono do evento)
-- `DELETE /api/eventos/{eventoId}/viagem` - Remover detalhes de viagem (admin dono do evento)
+Eventos:
+- GET /api/eventos/publico
+- GET /api/eventos/publico?categoria=musicais|cinema|eventos-diversos|viagens
+- GET /api/eventos
+- GET /api/eventos?categoria=musicais|cinema|eventos-diversos|viagens
+- PUT /api/eventos/{id}
+- DELETE /api/eventos/{id}
+- GET /api/eventos/{id}/assentos-ocupados
 
-**Tipos de ingresso**
-- `GET /api/eventos/{eventoId}/tipos-ingresso` - Listar tipos de ingresso ativos de um evento (público)
-- `GET /api/tipos-ingresso` - Listar tipos de ingresso dos eventos do admin autenticado
-- `POST /api/eventos/{eventoId}/tipos-ingresso` - Criar tipo de ingresso (admin dono do evento)
-- `PUT /api/tipos-ingresso/{id}` - Atualizar tipo de ingresso (admin dono do evento)
-- `DELETE /api/tipos-ingresso/{id}` - Desativar tipo de ingresso (admin dono do evento)
+Viagens:
+- GET /api/eventos/{eventoId}/viagem
+- PUT /api/eventos/{eventoId}/viagem
+- DELETE /api/eventos/{eventoId}/viagem
 
-### Categorias de Evento
+Tipos de ingresso:
+- GET /api/eventos/{eventoId}/tipos-ingresso
+- GET /api/tipos-ingresso
+- POST /api/eventos/{eventoId}/tipos-ingresso
+- PUT /api/tipos-ingresso/{id}
+- DELETE /api/tipos-ingresso/{id}
 
-O backend agora suporta as categorias abaixo para eventos:
+Reservas:
+- POST /api/reservas
+- GET /api/reservas
+- DELETE /api/reservas/{id}
 
-- `musicais`
-- `cinema`
-- `eventos-diversos`
-- `viagens`
+Cupons:
+- GET /api/cupons
 
-Ao criar evento (`POST /api/eventos`), o campo `Categoria` pode ser enviado no payload.
-Se o campo não for informado, a API assume `musicais` por padrão.
+## Regras de Categoria
 
-**Reservas**
-- `POST /api/reservas` - Criar reserva (aceita `TipoIngressoId` opcional)
-- `GET /api/reservas` - Listar reservas do usuário
-- `DELETE /api/reservas/{id}` - Cancelar reserva
+Categorias válidas no backend:
+- musicais
+- cinema
+- eventos-diversos
+- viagens
 
-Regra por categoria na reserva:
-- `musicais` e `cinema`: assento obrigatório
-- `eventos-diversos` e `viagens`: assento opcional
+Ao criar evento, o campo Categoria pode ser enviado no payload.
+Se não for enviado, o padrão é musicais.
 
-**Cupons**
-- `GET /api/cupons` - Listar cupons (admin)
+Regra de assento em reservas:
+- musicais e cinema: assento obrigatório
+- eventos-diversos e viagens: assento opcional
 
-## 🎨 Features Frontend
+## Testes
 
-✅ **Carousel dinâmico** com eventos em tempo real  
-✅ **Tema claro/escuro** persistido em localStorage  
-✅ **Páginas responsivas** para desktop e mobile  
-✅ **Grid de eventos** com busca visual  
-✅ **Autenticação** com páginas separadas (user/admin)
-
-## 🧪 Testes
-
-O projeto inclui testes unitários. Execute com:
 ```bash
 cd tests/TicketPrime.Tests
 dotnet test --verbosity normal
 ```
 
-## 📖 Documentação
+## Documentação
 
-- **Requisitos:** Ver [docs/requisitos.md](docs/requisitos.md)
-- **API Swagger:** Disponível em `/swagger` quando a API estiver rodando
-- **SQL Schema:** Ver [db/ticketprime.sql](db/ticketprime.sql)
-- **Migrações incrementais:** Ver scripts em [db/](db/)
+- Requisitos: [docs/requisitos.md](docs/requisitos.md)
+- Operação: [docs/operacao.md](docs/operacao.md)
+- ADR: [docs/adr.md](docs/adr.md)
+- Changelog: [docs/changelog](docs/changelog)
 
-## 🔐 Segurança
+## Segurança
 
 - Senhas hashadas com SHA-512
-- Autenticação por JWT
+- Autenticação JWT
+- Proteção de rotas de admin
 - Validação de CPF duplicado
-- Proteção de rotas admin
 
-## 👥 Autores
+## Autores
 
-- **Desenvolvedores:** @jvdellolio, @MiriamSsntos, @patrickmqs e @svfaca.
+- @jvdellolio
+- @MiriamSsntos
+- @patrickmqs
+- @svfaca
 
-- **Disciplina:** Engenharia de Software - Projeto TicketPrime
-
-## 📝 Licença
-
-Este projeto é fornecido para fins educacionais.
+Projeto acadêmico da disciplina de Engenharia de Software.

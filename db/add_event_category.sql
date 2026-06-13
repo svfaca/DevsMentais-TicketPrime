@@ -1,5 +1,5 @@
 -- Adiciona categoria em Eventos e prepara filtro por tipo de nicho
--- Categorias permitidas: musicais, cinema, eventos-diversos, viagens
+-- Categorias permitidas: musicais, cinema, eventos-diversos, copa, viagens
 
 BEGIN;
 
@@ -21,7 +21,7 @@ BEGIN
     ) THEN
         ALTER TABLE Eventos
         ADD CONSTRAINT ck_eventos_categoria
-        CHECK (Categoria IN ('musicais', 'cinema', 'eventos-diversos', 'viagens'));
+        CHECK (Categoria IN ('musicais', 'cinema', 'eventos-diversos', 'copa', 'viagens'));
     END IF;
 END $$;
 

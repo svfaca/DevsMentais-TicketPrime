@@ -44,6 +44,15 @@ const CATEGORY_DATA = [
         cor: '#1e40af'
     },
     {
+        slug: 'copa',
+        nome: 'Copa 2026',
+        destaque: 'Copa do Mundo 2026 já chegou no TicketPrime',
+        descricao: 'A Copa do Mundo 2026 já chegou no TicketPrime: garanta sua experiência e viva cada partida com emoção total.',
+        imagem: './imagens/categorias/copa/copa.webp',
+        icone: 'bx-football',
+        cor: '#166534'
+    },
+    {
         slug: 'viagens',
         nome: 'Viagens',
         destaque: 'Passagens e experiências de rota',
@@ -76,6 +85,14 @@ const CATEGORY_FALLBACK_IMAGE_POOLS = {
         './imagens/categorias/eventos-diversos/bienal.jpg',
         './imagens/categorias/eventos-diversos/ccxp.jpg',
         './imagens/categorias/eventos-diversos/SWING.png'
+    ],
+    copa: [
+        './imagens/categorias/copa/copa.webp',
+        './imagens/categorias/copa/argentina.jpg',
+        './imagens/categorias/copa/br.avif',
+        './imagens/categorias/copa/bra.png',
+        './imagens/categorias/copa/pt.png',
+        './imagens/categorias/copa/000-32z77xj.webp'
     ],
     viagens: [
         './imagens/categorias/viagens/fundoviagens.png',
@@ -116,7 +133,8 @@ const LOGO_BY_CATEGORY = {
     default: './imagens/logo.png',
     musicais: './imagens/logomusica.png',
     cinema: './imagens/logocinema.png',
-    'eventos-diversos': './imagens/logocopa.png',
+    'eventos-diversos': './imagens/logo.png',
+    copa: './imagens/logocopa.png',
     viagens: './imagens/logoviajjens.png'
 };
 
@@ -135,6 +153,12 @@ const LEGACY_IMAGE_TO_CATEGORY_PATH = {
     'ccxp.jpg': './imagens/categorias/eventos-diversos/ccxp.jpg',
     'bienal.jpg': './imagens/categorias/eventos-diversos/bienal.jpg',
     'futurecom.png': './imagens/categorias/eventos-diversos/futurecom.png',
+    'copa.webp': './imagens/categorias/copa/copa.webp',
+    'argentina.jpg': './imagens/categorias/copa/argentina.jpg',
+    'br.avif': './imagens/categorias/copa/br.avif',
+    'bra.png': './imagens/categorias/copa/bra.png',
+    'pt.png': './imagens/categorias/copa/pt.png',
+    '000-32z77xj.webp': './imagens/categorias/copa/000-32z77xj.webp',
     'fundoviagens.png': './imagens/categorias/viagens/fundoviagens.png',
     'metro.png': './imagens/categorias/viagens/metro.png',
     'onibus.png': './imagens/categorias/viagens/onibus.png',
