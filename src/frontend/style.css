@@ -1,5 +1,11 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins&display=swap');
 
+:root {
+    --hero-accent: #ff9b43;
+    --hero-accent-alt: #ff6f2c;
+    --hero-cta-text: #ffffff;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -99,6 +105,63 @@ body {
     font-size: 30px;
     font-weight: 800;
     color: #fff;
+}
+
+.navbar-brand-text {
+    line-height: 1;
+}
+
+.navbar-category-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1;
+    border: 1px solid transparent;
+    backdrop-filter: blur(6px);
+}
+
+.navbar-category-pill.is-hidden {
+    display: none;
+}
+
+.navbar-category-pill.pill-home {
+    background: rgba(151, 164, 186, 0.35);
+    color: #dbe7ff;
+    border-color: rgba(194, 207, 235, 0.52);
+}
+
+.navbar-category-pill.pill-musicais {
+    background: rgba(169, 107, 255, 0.22);
+    color: #ecd9ff;
+    border-color: rgba(210, 170, 255, 0.55);
+}
+
+.navbar-category-pill.pill-cinema {
+    background: rgba(255, 98, 98, 0.2);
+    color: #ffd7d7;
+    border-color: rgba(255, 150, 150, 0.52);
+}
+
+.navbar-category-pill.pill-diversos {
+    background: rgba(103, 156, 255, 0.22);
+    color: #d7e8ff;
+    border-color: rgba(150, 184, 255, 0.52);
+}
+
+.navbar-category-pill.pill-copa {
+    background: rgba(52, 176, 111, 0.22);
+    color: #d7f8e8;
+    border-color: rgba(113, 211, 156, 0.55);
+}
+
+.navbar-category-pill.pill-viagens {
+    background: rgba(61, 186, 227, 0.24);
+    color: #d5f6ff;
+    border-color: rgba(124, 220, 248, 0.55);
 }
 
 .logo-img {
@@ -660,8 +723,8 @@ body.light-mode .theme-toggle {
 }
 
 .hero-btn.primary {
-    background: linear-gradient(135deg, #ff6b35, #f7931e);
-    color: #fff;
+    background: linear-gradient(135deg, var(--hero-accent), var(--hero-accent-alt));
+    color: var(--hero-cta-text);
 }
 
 .hero-btn.primary:hover {
@@ -698,8 +761,8 @@ body.light-mode .theme-toggle {
     gap: 10px;
     padding: 10px 18px;
     border-radius: 999px;
-    border: 1px solid rgba(255, 155, 67, 0.55);
-    color: #ff9b43;
+    border: 1px solid color-mix(in srgb, var(--hero-accent) 62%, transparent);
+    color: var(--hero-accent);
     background: rgba(0, 0, 0, 0.35);
     font-size: 15px;
     font-weight: 700;
@@ -716,13 +779,13 @@ body.light-mode .theme-toggle {
 }
 
 .hero-accent {
-    color: #ff9b43;
+    color: var(--hero-accent);
 }
 
 .hero-btn--home-premium {
-    background: linear-gradient(135deg, #ff9b43 0%, #ff6f2c 100%);
-    color: #fff;
-    border: 1px solid rgba(255, 168, 92, 0.7);
+    background: linear-gradient(135deg, var(--hero-accent) 0%, var(--hero-accent-alt) 100%);
+    color: var(--hero-cta-text);
+    border: 1px solid color-mix(in srgb, var(--hero-accent) 65%, transparent);
     border-radius: 14px;
     padding: 18px 40px;
     font-size: 18px;
@@ -757,7 +820,7 @@ body.light-mode .theme-toggle {
 }
 
 .hero-highlight-musica {
-    color: #ffd028;
+    color: var(--hero-accent);
 }
 
 .hero-content--musica-spotlight .hero-description {
@@ -777,8 +840,8 @@ body.light-mode .theme-toggle {
     border-radius: 18px;
     font-size: 30px;
     font-weight: 800;
-    background: linear-gradient(135deg, #ffd028 0%, #ffbd00 100%);
-    color: #111827;
+    background: linear-gradient(135deg, var(--hero-accent) 0%, var(--hero-accent-alt) 100%);
+    color: var(--hero-cta-text);
     box-shadow: 0 18px 34px rgba(0, 0, 0, 0.35);
 }
 
@@ -853,8 +916,8 @@ body.light-mode .theme-toggle {
     border-radius: 14px;
     font-size: 18px;
     font-weight: 700;
-    background: #1d6feb;
-    color: #fff;
+    background: linear-gradient(135deg, var(--hero-accent) 0%, var(--hero-accent-alt) 100%);
+    color: var(--hero-cta-text);
     text-decoration: none;
     border: none;
     cursor: pointer;
@@ -863,7 +926,7 @@ body.light-mode .theme-toggle {
 }
 
 .hero-btn--viagens:hover {
-    background: #1559d0;
+    background: linear-gradient(135deg, var(--hero-accent-alt) 0%, var(--hero-accent) 100%);
     transform: translateY(-2px);
     box-shadow: 0 10px 32px rgba(29, 111, 235, 0.5);
 }
@@ -2069,6 +2132,12 @@ body.light-mode {
 
     .navbar-logo {
         font-size: 24px;
+        gap: 8px;
+    }
+
+    .navbar-category-pill {
+        padding: 3px 8px;
+        font-size: 11px;
     }
 
     .logo-img {

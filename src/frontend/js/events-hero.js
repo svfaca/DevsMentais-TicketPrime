@@ -91,7 +91,7 @@ const CATEGORY_FALLBACK_IMAGE_POOLS = {
         './imagens/categorias/copa/argentina.jpg',
         './imagens/categorias/copa/br.avif',
         './imagens/categorias/copa/bra.png',
-        './imagens/categorias/copa/pt.avif',
+        './imagens/categorias/copa/pt.png',
         './imagens/categorias/copa/000-32z77xj.webp'
     ],
     viagens: [
@@ -138,6 +138,14 @@ const LOGO_BY_CATEGORY = {
     viagens: './imagens/logoviajjens.png'
 };
 
+const NAV_PILL_BY_CATEGORY = {
+    musicais: { label: 'Musicais', className: 'pill-musicais' },
+    cinema: { label: 'Cinema', className: 'pill-cinema' },
+    'eventos-diversos': { label: 'Diversos', className: 'pill-diversos' },
+    copa: { label: 'Copa 2026', className: 'pill-copa' },
+    viagens: { label: 'Viagens', className: 'pill-viagens' }
+};
+
 let heroCurrentIndex = 0;
 let autoPlayInterval = null;
 const categoryImagePools = new Map();
@@ -157,7 +165,7 @@ const LEGACY_IMAGE_TO_CATEGORY_PATH = {
     'argentina.jpg': './imagens/categorias/copa/argentina.jpg',
     'br.avif': './imagens/categorias/copa/br.avif',
     'bra.png': './imagens/categorias/copa/bra.png',
-    'pt.avif': './imagens/categorias/copa/pt.avif',
+    'pt.png': './imagens/categorias/copa/pt.png',
     '000-32z77xj.webp': './imagens/categorias/copa/000-32z77xj.webp',
     'fundoviagens.png': './imagens/categorias/viagens/fundoviagens.png',
     'metro.png': './imagens/categorias/viagens/metro.png',
@@ -173,6 +181,12 @@ function mapLegacyImagePath(rawPath) {
     const fileName = String(rawPath ?? '').split('/').pop()?.toLowerCase();
     if (!fileName) return '';
     return LEGACY_IMAGE_TO_CATEGORY_PATH[fileName] || '';
+}
+
+function isCopaBrazilImagePath(imagePath) {
+    const src = String(imagePath || '').toLowerCase();
+    if (!src) return false;
+    return src.includes('/copa/br.avif') || src.includes('/copa/bra.png') || src.endsWith('br.avif') || src.endsWith('bra.png');
 }
 
 function normalizeImageUrl(rawImage) {
@@ -269,6 +283,8 @@ function definirImagemInicialCategorias() {
 }
 
 async function recomputeItemColors(item) {
+    item.paletteOverride = null;
+
     try {
         const [c1, c2] = await getDualAverageColors(item.imagem);
         if (item.cor) {
@@ -281,6 +297,17 @@ async function recomputeItemColors(item) {
     } catch (error) {
         item.computedPrimary = item.cor || '#000000';
         item.computedSecondary = item.cor || '#111111';
+    }
+
+    if (item?.slug === 'copa' && isCopaBrazilImagePath(item.imagem)) {
+        item.computedPrimary = '#0f6d31';
+        item.computedSecondary = '#0a4f25';
+        item.paletteOverride = {
+            accent: '#FFD60A',
+            accentAlt: '#FBC02D',
+            ctaText: '#1f2937',
+            pillHighlight: '#FFD60A'
+        };
     }
 }
 
@@ -312,7 +339,8 @@ async function refreshCategorySlideImage(item, index) {
         atualizarCorFundo(
             [item.computedPrimary || item.cor, item.computedSecondary || item.cor],
             item.cor,
-            item.headerCor
+            item.headerCor,
+            item.paletteOverride
         );
     }
 }
@@ -445,6 +473,84 @@ function isBrownish(hex) {
     }
 }
 
+function relativeLuminance(hex) {
+    try {
+        const { r, g, b } = hexToRgb(hex || '#000000');
+        const srgb = [r, g, b].map((v) => v / 255).map((v) => (
+            v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)
+        ));
+        return 0.2126 * srgb[0] + 0.7152 * srgb[1] + 0.0722 * srgb[2];
+    } catch {
+        return 0;
+    }
+}
+
+function readableTextForBackground(hex) {
+    return relativeLuminance(hex) > 0.52 ? '#0f172a' : '#f8fafc';
+}
+
+function complementaryHex(hex) {
+    try {
+        const { r, g, b } = hexToRgb(hex || '#000000');
+        return rgbToHex(255 - r, 255 - g, 255 - b);
+    } catch {
+        return '#cbd5e1';
+    }
+}
+
+function applyComplementaryPillStyle(pill, primaryHex, secondaryHex, categoryBase, forcedHighlightHex) {
+    if (!pill) return;
+
+    let base = blendHex(primaryHex || '#143a52', secondaryHex || '#101b33', 0.38);
+    if (categoryBase) base = blendHex(base, categoryBase, 0.35);
+
+    let comp = forcedHighlightHex || complementaryHex(base);
+    let bg = blendHex(comp, '#ffffff', 0.58);
+    let border = blendHex(comp, '#ffffff', 0.36);
+    if (isBrownish(bg)) bg = blendHex(comp, '#cfe1ff', 0.5);
+
+    const text = readableTextForBackground(bg);
+
+    pill.style.background = bg;
+    pill.style.borderColor = border;
+    pill.style.color = text;
+}
+
+function atualizarPaletaCTA(primaryHex, secondaryHex, categoryBase, paletteOverride) {
+    if (paletteOverride?.accent && paletteOverride?.accentAlt) {
+        document.documentElement.style.setProperty('--hero-accent', paletteOverride.accent);
+        document.documentElement.style.setProperty('--hero-accent-alt', paletteOverride.accentAlt);
+        document.documentElement.style.setProperty('--hero-cta-text', paletteOverride.ctaText || '#f8fafc');
+        return;
+    }
+
+    const primary = primaryHex || '#143a52';
+    const secondary = secondaryHex || '#101b33';
+
+    let accentA = blendHex(primary, secondary, 0.42);
+    if (categoryBase) accentA = blendHex(accentA, categoryBase, 0.46);
+    if (isBrownish(accentA)) accentA = categoryBase || blendHex(primary, '#ff8a3d', 0.5);
+
+    const accentAHsl = hexToHsl(accentA);
+    if (accentAHsl.s < 35 || accentAHsl.l < 22) {
+        accentA = blendHex(accentA, '#ff8a3d', 0.68);
+    }
+
+    let accentB = blendHex(accentA, secondary, 0.33);
+    if (isBrownish(accentB)) accentB = blendHex(accentA, '#334155', 0.35);
+
+    const accentBHsl = hexToHsl(accentB);
+    if (accentBHsl.s < 30 || accentBHsl.l < 20) {
+        accentB = blendHex(accentA, '#ff5a22', 0.42);
+    }
+
+    const ctaText = readableTextForBackground(blendHex(accentA, accentB, 0.5));
+
+    document.documentElement.style.setProperty('--hero-accent', accentA);
+    document.documentElement.style.setProperty('--hero-accent-alt', accentB);
+    document.documentElement.style.setProperty('--hero-cta-text', ctaText);
+}
+
 async function preloadAndComputeColors() {
     const items = HERO_DATA.slice();
     const promises = items.map(async (it) => {
@@ -462,9 +568,10 @@ function buildCategoryLink(categoriaSlug) {
     return `${FRONTEND_BASE_URL}/paginas/categoria.html?categoria=${encodeURIComponent(categoriaSlug)}`;
 }
 
-function atualizarCorFundo(corHex, categoryBase, headerOverride) {
+function atualizarCorFundo(corHex, categoryBase, headerOverride, paletteOverride) {
     // accept either single color or array [primary,secondary]
     if (Array.isArray(corHex)){
+        atualizarPaletaCTA(corHex[0], corHex[1], categoryBase, paletteOverride);
         document.documentElement.style.setProperty('--cor-pagina-primary', corHex[0]);
         document.documentElement.style.setProperty('--cor-pagina-secondary', corHex[1]);
         document.body.style.background = `linear-gradient(180deg, ${corHex[0]} 0%, ${corHex[1]} 100%)`;
@@ -485,6 +592,7 @@ function atualizarCorFundo(corHex, categoryBase, headerOverride) {
             nav.style.background = headerColor;
         }
     } else {
+        atualizarPaletaCTA(corHex, corHex, categoryBase, paletteOverride);
         document.documentElement.style.setProperty('--cor-pagina-primary', corHex);
         document.documentElement.style.setProperty('--cor-pagina-secondary', corHex);
         document.body.style.background = corHex;
@@ -583,7 +691,7 @@ function carregarHero() {
     carregarDots();
     iniciarHeroControles();
     const first = HERO_DATA[0];
-    atualizarCorFundo([first.computedPrimary || first.cor, first.computedSecondary || first.cor], first.cor, first.headerCor);
+    atualizarCorFundo([first.computedPrimary || first.cor, first.computedSecondary || first.cor], first.cor, first.headerCor, first.paletteOverride);
     atualizarLogoPorSlide(first);
 
     const explorarBtn = heroContainer.querySelector('[data-action="explorar"]');
@@ -600,6 +708,24 @@ function atualizarLogoPorSlide(itemAtivo) {
     const logoSrc = LOGO_BY_CATEGORY[categoria] || LOGO_BY_CATEGORY.default;
     logoImg.src = logoSrc;
     logoImg.alt = categoria ? `Logo TicketPrime ${categoria}` : 'Logo TicketPrime';
+
+    const pill = document.querySelector('.navbar-logo .navbar-category-pill');
+    if (pill) {
+        const pillMeta = categoria ? NAV_PILL_BY_CATEGORY[categoria] : null;
+        if (!pillMeta) {
+            pill.textContent = '';
+            pill.className = 'navbar-category-pill is-hidden';
+            pill.setAttribute('aria-hidden', 'true');
+            pill.removeAttribute('style');
+        } else {
+            pill.textContent = pillMeta.label;
+            pill.className = `navbar-category-pill ${pillMeta.className}`;
+            pill.setAttribute('aria-hidden', 'false');
+            const primary = itemAtivo?.computedPrimary || itemAtivo?.cor || getComputedStyle(document.documentElement).getPropertyValue('--cor-pagina-primary').trim();
+            const secondary = itemAtivo?.computedSecondary || itemAtivo?.cor || getComputedStyle(document.documentElement).getPropertyValue('--cor-pagina-secondary').trim();
+            applyComplementaryPillStyle(pill, primary, secondary, itemAtivo?.cor, itemAtivo?.paletteOverride?.pillHighlight);
+        }
+    }
 }
 
 function carregarDots() {
@@ -636,7 +762,7 @@ function mudarHero(index) {
     const itemAtivo = HERO_DATA[index];
     const newPrimary = itemAtivo?.computedPrimary || itemAtivo?.cor;
     const newSecondary = itemAtivo?.computedSecondary || itemAtivo?.cor;
-    if (newPrimary) atualizarCorFundo([newPrimary, newSecondary], itemAtivo?.cor, itemAtivo?.headerCor);
+    if (newPrimary) atualizarCorFundo([newPrimary, newSecondary], itemAtivo?.cor, itemAtivo?.headerCor, itemAtivo?.paletteOverride);
     atualizarLogoPorSlide(itemAtivo);
 
     refreshCategorySlideImage(itemAtivo, index);
