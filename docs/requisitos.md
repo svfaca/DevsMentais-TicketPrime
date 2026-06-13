@@ -10,7 +10,7 @@ Como usuário, Quero me cadastrar informando CPF, nome, email e senha, Para ter 
 - Banco de dados: PostgreSQL
 
 ### US02 - Cadastro de Eventos ✅
-Como administrador, Quero cadastrar eventos informando nome, capacidade total, data do evento e preço padrão, Para disponibilizar eventos no sistema.
+Como administrador, Quero cadastrar eventos informando nome, capacidade total, data do evento, preço padrão e categoria, Para disponibilizar eventos no sistema.
 
 **Status:** Implementado
 - Endpoint: `POST /api/eventos` (requer autenticação admin)
@@ -38,6 +38,24 @@ Como usuário, Quero fazer reserva de ingressos para um evento, Para garantir mi
 - Endpoint: `GET /api/reservas` (lista reservas do usuário)
 - Endpoint: `DELETE /api/reservas/{id}` (cancela reserva)
 - Endpoint: `GET /api/eventos/{id}/assentos-ocupados` (verifica disponibilidade)
+
+### US08 - Tipos de Ingresso por Evento ✅
+Como administrador, Quero configurar múltiplos tipos de ingresso em cada evento, Para vender categorias de acesso com preços e estoques distintos.
+
+**Status:** Implementado
+- Endpoint: `POST /api/eventos/{eventoId}/tipos-ingresso` (cria tipo)
+- Endpoint: `GET /api/eventos/{eventoId}/tipos-ingresso` (lista tipos ativos, público)
+- Endpoint: `GET /api/tipos-ingresso` (lista tipos dos eventos do admin)
+- Endpoint: `DELETE /api/tipos-ingresso/{id}` (desativa tipo)
+
+### US09 - Detalhes de Viagem por Evento ✅
+Como administrador, Quero informar origem, destino, companhia e horários de partida/chegada em eventos da categoria viagens, Para vender ingressos de viagem com dados completos.
+
+**Status:** Implementado
+- Endpoint: `GET /api/eventos/{eventoId}/viagem` (consulta detalhes de viagem)
+- Endpoint: `PUT /api/eventos/{eventoId}/viagem` (cria/atualiza detalhes)
+- Endpoint: `DELETE /api/eventos/{eventoId}/viagem` (remove detalhes)
+- Regra: somente eventos com categoria `viagens` aceitam detalhes de viagem
 
 ### US06 - Authentificação de Admin ✅
 Como administrador, Quero fazer login no sistema, Para acessar funcionalidades administrativas.

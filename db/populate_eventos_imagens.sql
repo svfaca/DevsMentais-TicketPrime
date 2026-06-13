@@ -11,7 +11,7 @@ WHERE Nome ILIKE '%Luan Santana%' OR Nome ILIKE '%Para Sempre%';
 UPDATE Eventos SET ImagemUrl = '/imagens/matueebrandao.jpg'
 WHERE Nome ILIKE '%Matue%' OR Nome ILIKE '%Brandão%' OR Nome ILIKE '%Encontro de Gerações%';
 
-UPDATE Eventos SET ImagemUrl = '/imagens/leo.jpg'
+UPDATE Eventos SET ImagemUrl = '/imagens/leo.png'
 WHERE Nome ILIKE '%Leo Santana%' OR Nome ILIKE '%Festa do Povo%';
 
 UPDATE Eventos SET ImagemUrl = '/imagens/bienal.jpg'

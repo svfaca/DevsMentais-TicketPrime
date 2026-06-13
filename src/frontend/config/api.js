@@ -8,8 +8,9 @@ export const API_BASE_URL = (() => {
     return configuredUrl.replace(/\/+$/, '');
   }
 
-  if (window.location.hostname === 'localhost') {
-    return 'http://localhost:5129';
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    // local backend (when running via dotnet run) listens on 8080 in this project
+    return 'http://localhost:8080';
   }
 
   return 'https://devsmentais-ticketprime-production.up.railway.app';

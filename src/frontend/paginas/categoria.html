@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Categoria | TicketPrime</title>
+  <link rel="stylesheet" href="../style.css" />
+  <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
+  <style>
+    /* Reuse the main hero look: keep page padding but allow hero to match home styles */
+    .categoria-page {
+      padding-top: 92px;
+      color: #fff;
+      min-height: 100vh;
+      display: block;
+      overflow-x: hidden;
+    }
+    .categoria-wrap {
+      width: 100%;
+      margin: 0 auto 48px;
+      display: grid;
+      gap: 24px;
+    }
+    /* reuse existing .hero-section and .hero-content styling from style.css; keep small overrides */
+    /* make hero full-bleed like the home page */
+    .hero-section { 
+      width: 100%;
+      margin-left: 0;
+      border-radius: 0;
+      overflow: hidden;
+      border: 0;
+      height: calc(100vh - 92px);
+      display: flex;
+      align-items: center;
+      position: relative;
+      background-size: cover;
+      background-position: center;
+    }
+    .hero-content { max-width: 520px; padding: 24px 28px; }
+    @media (max-width: 720px) { .hero-content { max-width: 100%; padding: 18px; } }
+    .hero-content { background: linear-gradient(135deg, rgba(0,0,0,0.28) 0%, rgba(0,0,0,0.14) 100%); }
+    .categoria-empty { padding: 32px; text-align: center; border-radius: 16px; border: 1px solid rgba(255,255,255,0.16); background: rgba(255,255,255,0.04); }
+  </style>
+</head>
+<body class="categoria-page">
+  <header class="site-navbar">
+    <div class="navbar-logo">
+      <img src="../imagens/logo.png" alt="Logo TicketPrime" class="logo-img" />
+      <span>TicketPrime</span>
+    </div>
+    <nav class="navbar-links">
+      <a href="../index.html" class="navbar-btn">Home</a>
+      <a href="./login.html" class="navbar-btn">Login</a>
+    </nav>
+  </header>
+
+  <main class="categoria-wrap">
+    <section class="hero-section" id="categoria-hero">
+      <div class="hero-content">
+        <div class="categoria-badge"><i class="bx bx-category"></i> <span id="categoria-badge-text">Categoria</span></div>
+        <h1 class="hero-title" id="categoria-title">Carregando...</h1>
+        <p class="hero-description" id="categoria-subtitle">Buscando eventos da categoria...</p>
+      </div>
+    </section>
+
+    <section class="events-grid-section">
+      <h2 class="section-title" style="margin-bottom: 24px; font-size: clamp(28px, 4vw, 40px);">Eventos da categoria</h2>
+      <div class="events-grid" id="events-grid"></div>
+      <div class="categoria-empty" id="categoria-empty" hidden>Nenhum evento disponível nesta categoria no momento.</div>
+    </section>
+  </main>
+
+  <script type="module">
+    import { API_BASE_URL } from '../config/api.js';
+
+    const categorias = {
+      musicais: {
+        nome: 'Musicais',
+        descricao: 'Shows e festivais ao vivo.',
+        imagem: '../imagens/categorias/musicais/luan.jpg',
+        cor: '#6b4c9f',
+        logo: '../imagens/logomusica.png'
+      },
+      cinema: {
+        nome: 'Cinema',
+        descricao: 'Pré-estreias e sessões especiais.',
+        imagem: '../imagens/categorias/cinema/marvelvsdc.png',
+        cor: '#dc2626',
+        logo: '../imagens/logocinema.png'
+      },
+      'eventos-diversos': {
+        nome: 'Eventos Diversos',
+        descricao: 'Feiras, congressos e experiências culturais.',
+        imagem: '../imagens/categorias/eventos-diversos/futurecom.png',
+        cor: '#1e40af',
+        logo: '../imagens/logocopa.png'
+      },
+      viagens: {
+        nome: 'Viagens',
+        descricao: 'Rotas e experiências de viagem com ingresso.',
+        imagem: '../imagens/categorias/viagens/fundoviagens.png',
+        cor: '#0891b2',
+        logo: '../imagens/logoviajjens.png'
+      }
+    };
+
+    const params = new URLSearchParams(window.location.search);
+    const categoria = (params.get('categoria') || 'musicais').toLowerCase();
+    const categoriaInfo = categorias[categoria] || categorias.musicais;
+    const navbarLogoImg = document.querySelector('.navbar-logo .logo-img');
+
+    if (navbarLogoImg) {
+      navbarLogoImg.src = categoriaInfo.logo || '../imagens/logo.png';
+      navbarLogoImg.alt = `Logo TicketPrime ${categoriaInfo.nome}`;
+    }
+
+    const categoriaTitle = document.getElementById('categoria-title');
+    const categoriaSubtitle = document.getElementById('categoria-subtitle');
+    const categoriaHero = document.getElementById('categoria-hero');
+    const eventsGrid = document.getElementById('events-grid');
+    const categoriaEmpty = document.getElementById('categoria-empty');
+
+    const imageByEventName = [
+      ['Luan Santana', '../imagens/categorias/musicais/luan.jpg'],
+      ['Para Sempre', '../imagens/categorias/musicais/luan.jpg'],
+      ['Matue', '../imagens/categorias/musicais/matueebrandao.jpg'],
+      ['Brandão', '../imagens/categorias/musicais/matueebrandao.jpg'],
+      ['Encontro de Gerações', '../imagens/categorias/musicais/matueebrandao.jpg'],
+      ['Leo Santana', '../imagens/categorias/musicais/leo.png'],
+      ['Festa do Povo', '../imagens/categorias/musicais/leo.png'],
+      ['Kanye', '../imagens/categorias/musicais/kanye.jpg'],
+      ['Retorno', '../imagens/categorias/musicais/kanye.jpg'],
+      ['SWING', '../imagens/categorias/eventos-diversos/SWING.png'],
+      ['Swing', '../imagens/categorias/eventos-diversos/SWING.png']
+    ];
+
+    const legacyImageMap = {
+      'luan.jpg': '../imagens/categorias/musicais/luan.jpg',
+      'matueebrandao.jpg': '../imagens/categorias/musicais/matueebrandao.jpg',
+      'leo.png': '../imagens/categorias/musicais/leo.png',
+      'kanye.jpg': '../imagens/categorias/musicais/kanye.jpg',
+      'swing.png': '../imagens/categorias/eventos-diversos/SWING.png',
+      'ccxp.jpg': '../imagens/categorias/eventos-diversos/ccxp.jpg',
+      'bienal.jpg': '../imagens/categorias/eventos-diversos/bienal.jpg',
+      'futurecom.png': '../imagens/categorias/eventos-diversos/futurecom.png',
+      'fundoviagens.png': '../imagens/categorias/viagens/fundoviagens.png',
+      'fundo.jpg': '../imagens/home/fundo.jpg'
+    };
+
+    function mapLegacyImagePath(rawPath) {
+      const fileName = String(rawPath ?? '').split('/').pop()?.toLowerCase();
+      if (!fileName) return '';
+      return legacyImageMap[fileName] || '';
+    }
+
+    function resolveEventImageUrl(evento) {
+      const rawImage = String(evento.imagemurl ?? evento.imagemUrl ?? evento.ImagemUrl ?? '').trim();
+      if (rawImage) {
+        if (/^(https?:|data:|blob:)/i.test(rawImage)) return rawImage;
+        if (rawImage.startsWith('/imagens/')) {
+          const mapped = mapLegacyImagePath(rawImage);
+          if (mapped) return mapped;
+          return `../${rawImage.slice(1)}`;
+        }
+        return rawImage;
+      }
+
+      const nome = String(evento.nome ?? evento.Nome ?? '');
+      const matched = imageByEventName.find(([token]) => nome.toLowerCase().includes(token.toLowerCase()));
+      return matched?.[1] || categoriaInfo.imagem;
+    }
+
+    categoriaTitle.textContent = categoriaInfo.nome;
+    categoriaSubtitle.textContent = categoriaInfo.descricao;
+
+    // apply hero image and compute safe colors similar to home
+    categoriaHero.style.backgroundImage = `url('${categoriaInfo.imagem}')`;
+
+    // helper functions (copied minimal from events-hero.js)
+    function hexToRgb(hex) { hex = (hex||'#000000').replace('#',''); if(hex.length===3) hex = hex.split('').map(h=>h+h).join(''); const bigint = parseInt(hex,16); return {r:(bigint>>16)&255,g:(bigint>>8)&255,b:bigint&255}; }
+    function rgbToHex(r,g,b){ const toHex=(n)=>Math.max(0,Math.min(255,Math.round(n))).toString(16).padStart(2,'0'); return `#${toHex(r)}${toHex(g)}${toHex(b)}`; }
+    function blendHex(hexA, hexB, weight){ try{ const a=hexToRgb(hexA); const b=hexToRgb(hexB); const r=a.r*(1-weight)+b.r*weight; const g=a.g*(1-weight)+b.g*weight; const bl=a.b*(1-weight)+b.b*weight; return rgbToHex(r,g,bl);}catch(e){return hexA||hexB||'#000000'} }
+    async function getDualAverageColors(imageUrl){ return new Promise((resolve)=>{ const img=new Image(); img.crossOrigin='anonymous'; img.onload=()=>{ try{ const canvas=document.createElement('canvas'); const ctx=canvas.getContext('2d'); const w=48,h=48; canvas.width=w; canvas.height=h; ctx.drawImage(img,0,0,w,h); const data=ctx.getImageData(0,0,w,h).data; let r1=0,g1=0,b1=0,c1=0; let r2=0,g2=0,b2=0,c2=0; for(let y=0;y<h;y++){ for(let x=0;x<w;x++){ const i=(y*w+x)*4; const a=data[i+3]; if(a<40) continue; const r=data[i],g=data[i+1],b=data[i+2]; if(y<h/2){r1+=r;g1+=g;b1+=b;c1++;}else{r2+=r;g2+=g;b2+=b;c2++;}}} if(c1===0)c1=1; if(c2===0)c2=1; const toHex=(n)=>n.toString(16).padStart(2,'0'); const p1='#'+toHex(Math.round(r1/c1))+toHex(Math.round(g1/c1))+toHex(Math.round(b1/c1)); const p2='#'+toHex(Math.round(r2/c2))+toHex(Math.round(g2/c2))+toHex(Math.round(b2/c2)); resolve([p1,p2]); }catch(e){resolve(['#000000','#111111']);}}; img.onerror=()=>resolve(['#000000','#111111']); img.src=imageUrl; }); }
+    function hexToHsl(hex){ const {r,g,b}=hexToRgb(hex); const r1=r/255,g1=g/255,b1=b/255; const max=Math.max(r1,g1,b1),min=Math.min(r1,g1,b1); let h=0,s=0,l=(max+min)/2; if(max!==min){const d=max-min; s=l>0.5?d/(2-max-min):d/(max+min); switch(max){case r1: h=(g1-b1)/d + (g1<b1?6:0); break; case g1: h=(b1-r1)/d+2; break; case b1: h=(r1-g1)/d+4; break;} h/=6;} return {h:Math.round(h*360), s:Math.round(s*100), l:Math.round(l*100)} }
+    function isBrownish(hex){ try{ const hsl=hexToHsl(hex); if(hsl.h>=10 && hsl.h<=45 && hsl.s>=10 && hsl.s<=70 && hsl.l>=10 && hsl.l<=60) return true; return false;}catch(e){return false} }
+
+    (async ()=>{
+      const [c1,c2] = await getDualAverageColors(categoriaInfo.imagem);
+      const primary = categoriaInfo.cor ? blendHex(c1, categoriaInfo.cor, 0.42) : c1;
+      const secondary = categoriaInfo.cor ? blendHex(c2, categoriaInfo.cor, 0.36) : c2;
+      document.documentElement.style.setProperty('--cor-pagina-primary', primary);
+      document.documentElement.style.setProperty('--cor-pagina-secondary', secondary);
+      document.body.style.background = `linear-gradient(180deg, ${primary} 0%, ${secondary} 100%)`;
+      const nav = document.querySelector('.site-navbar');
+      let headerColor = categoriaInfo.headerCor || blendHex(primary, '#222222', 0.18);
+      if(isBrownish(headerColor)) headerColor = 'rgba(31,41,55,0.92)';
+      if(nav) nav.style.background = headerColor;
+      // apply hero gradient overlay for better contrast
+      categoriaHero.style.backgroundImage = `linear-gradient(135deg, rgba(0,0,0,0.18), rgba(0,0,0,0.12)), url('${categoriaInfo.imagem}')`;
+    })();
+
+    async function carregarEventosCategoria() {
+      try {
+        const resposta = await fetch(`${API_BASE_URL}/api/eventos/publico?categoria=${encodeURIComponent(categoria)}`);
+        if (!resposta.ok) throw new Error(`HTTP ${resposta.status}`);
+
+        const eventos = await resposta.json();
+        if (!Array.isArray(eventos) || eventos.length === 0) {
+          categoriaEmpty.hidden = false;
+          return;
+        }
+
+        eventsGrid.innerHTML = '';
+
+        eventos.forEach((evento) => {
+          const id = evento.id ?? evento.Id;
+          const nome = evento.nome ?? evento.Nome ?? 'Evento';
+          const dataEvento = evento.dataEvento ?? evento.DataEvento;
+          const precoPadrao = Number(evento.precoPadrao ?? evento.PrecoPadrao ?? 0);
+          const imagem = resolveEventImageUrl(evento);
+
+          const dataFormatada = dataEvento
+            ? new Date(dataEvento).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
+            : 'Data a confirmar';
+
+          const card = document.createElement('a');
+          card.className = 'event-card';
+          card.href = `./painel-ingressos.html?id=${id}`;
+
+          card.innerHTML = `
+            <img src="${imagem}" alt="${nome}" class="event-card-image" />
+            <div class="event-card-content">
+              <div class="event-card-artist">${categoriaInfo.nome}</div>
+              <h3 class="event-card-title">${nome}</h3>
+              <div class="event-card-meta">
+                <div class="event-card-meta-item"><i class="bx bx-calendar"></i>${dataFormatada}</div>
+                <div class="event-card-meta-item"><i class="bx bx-purchase-tag"></i>Ingressos disponíveis</div>
+              </div>
+              <div class="event-card-footer">
+                <span class="event-card-price">R$ ${precoPadrao.toFixed(2)}</span>
+                <button class="event-card-btn" type="button">Ingressos</button>
+              </div>
+            </div>
+          `;
+
+          card.querySelector('.event-card-btn')?.addEventListener('click', (event) => {
+            event.preventDefault();
+            window.location.href = `./painel-ingressos.html?id=${id}`;
+          });
+
+          eventsGrid.appendChild(card);
+        });
+
+        // build hero carousel from fetched events (show up to 6 slides)
+        buildHeroFromEvents(eventos.slice(0, 6));
+      } catch {
+        categoriaEmpty.hidden = false;
+      }
+    }
+
+    carregarEventosCategoria();
+
+    // Carousel for category page
+    let heroCurrentIndex = 0;
+    let autoPlayInterval = null;
+
+    function mudarHeroCategoria(index) {
+      const items = document.querySelectorAll('#categoria-hero .hero-item');
+      const dots = document.querySelectorAll('#categoria-dots .hero-dot');
+      items.forEach(i=>i.classList.remove('active'));
+      dots.forEach(d=>d.classList.remove('active'));
+      items[index]?.classList.add('active');
+      dots[index]?.classList.add('active');
+      heroCurrentIndex = index;
+      // update colors from slide dataset if present
+      const item = items[index];
+      if (item) {
+        const p = item.dataset.primary || getComputedStyle(document.documentElement).getPropertyValue('--cor-pagina-primary');
+        const s = item.dataset.secondary || getComputedStyle(document.documentElement).getPropertyValue('--cor-pagina-secondary');
+        document.documentElement.style.setProperty('--cor-pagina-primary', p);
+        document.documentElement.style.setProperty('--cor-pagina-secondary', s);
+        document.body.style.background = `linear-gradient(180deg, ${p} 0%, ${s} 100%)`;
+      }
+    }
+
+    function startAutoPlayCategoria() {
+      if (autoPlayInterval) clearInterval(autoPlayInterval);
+      autoPlayInterval = setInterval(() => {
+        const items = document.querySelectorAll('#categoria-hero .hero-item');
+        if (!items || items.length===0) return;
+        heroCurrentIndex = (heroCurrentIndex + 1) % items.length;
+        mudarHeroCategoria(heroCurrentIndex);
+      }, 7000);
+    }
+
+    function buildHeroFromEvents(events) {
+      const heroSection = document.getElementById('categoria-hero');
+      if (!heroSection) return;
+      // ensure container exists
+      let container = heroSection.querySelector('.hero-container');
+      if (container) container.remove();
+      container = document.createElement('div');
+      container.className = 'hero-container';
+      container.style.position = 'absolute';
+      container.style.inset = '0';
+      heroSection.insertBefore(container, heroSection.firstChild);
+
+      // create slides
+      events.forEach((ev, idx) => {
+        const img = resolveEventImageUrl(ev);
+        const item = document.createElement('div');
+        item.className = 'hero-item';
+        if (idx===0) item.classList.add('active');
+        item.style.backgroundImage = `url('${img}')`;
+        // store colors if available (approx)
+        item.dataset.primary = categoriaInfo.cor || getComputedStyle(document.documentElement).getPropertyValue('--cor-pagina-primary');
+        item.dataset.secondary = categoriaInfo.cor || getComputedStyle(document.documentElement).getPropertyValue('--cor-pagina-secondary');
+        container.appendChild(item);
+      });
+
+      // controls
+      // prev/next
+      let prev = heroSection.querySelector('.hero-prev');
+      let next = heroSection.querySelector('.hero-next');
+      if (!prev) {
+        prev = document.createElement('button');
+        prev.className = 'hero-control hero-prev';
+        prev.innerHTML = '&#xE0E5;';
+        heroSection.appendChild(prev);
+      }
+      if (!next) {
+        next = document.createElement('button');
+        next.className = 'hero-control hero-next';
+        next.innerHTML = '&#xE0E6;';
+        heroSection.appendChild(next);
+      }
+      prev.onclick = () => { heroCurrentIndex = (heroCurrentIndex-1+events.length)%events.length; mudarHeroCategoria(heroCurrentIndex); startAutoPlayCategoria(); };
+      next.onclick = () => { heroCurrentIndex = (heroCurrentIndex+1)%events.length; mudarHeroCategoria(heroCurrentIndex); startAutoPlayCategoria(); };
+
+      // dots
+      let dotsWrap = document.getElementById('categoria-dots');
+      if (dotsWrap) dotsWrap.remove();
+      dotsWrap = document.createElement('div');
+      dotsWrap.id = 'categoria-dots';
+      dotsWrap.className = 'hero-dots';
+      heroSection.appendChild(dotsWrap);
+      events.forEach((_, i)=>{
+        const d = document.createElement('button'); d.className='hero-dot'; if(i===0) d.classList.add('active'); d.addEventListener('click', ()=>{ mudarHeroCategoria(i); startAutoPlayCategoria(); }); dotsWrap.appendChild(d);
+      });
+
+      // initialize colors from first
+      mudarHeroCategoria(0);
+      startAutoPlayCategoria();
+    }
+  </script>
+</body>
+</html>

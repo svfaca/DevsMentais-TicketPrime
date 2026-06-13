@@ -62,16 +62,16 @@ Criado: `db/populate_eventos_imagens.sql`
 
 ```
 Backend (DB):
-Eventos.ImagemUrl = './imagens/leo.jpg'
+Eventos.ImagemUrl = './imagens/leo.png'
          ↓
 API GET /api/eventos/publico
          ↓
-Response: { id: 1, nome: 'Leo Santana', ImagemUrl: './imagens/leo.jpg' }
+Response: { id: 1, nome: 'Leo Santana', ImagemUrl: './imagens/leo.png' }
          ↓
 Frontend (JS):
-evento.ImagemUrl = './imagens/leo.jpg'
+evento.ImagemUrl = './imagens/leo.png'
          ↓
-<div style="backgroundImage: url('./imagens/leo.jpg')">
+<div style="backgroundImage: url('./imagens/leo.png')">
 ```
 
 ## 🚀 Como Usar

@@ -1,6 +1,6 @@
 # TicketPrime
 
-Plataforma de venda de ingressos para eventos musicais. Sistema completo com frontend responsivo, API REST em ASP.NET Core e banco de dados PostgreSQL.
+Plataforma de venda de ingressos para categorias nichadas (musicais, cinema, eventos-diversos e viagens). Sistema completo com frontend responsivo, API REST em ASP.NET Core e banco de dados PostgreSQL.
 
 ## 🚀 Stack Tecnológico
 
@@ -84,74 +84,6 @@ cd tests/TicketPrime.Tests
 dotnet test
 ```
 
-### Database Setup - Conectar Frontend com Banco de Dados
-
-A partir do banco criado, o frontend busca eventos dinamicamente da API:
-
-1. **Verificar Endpoint da API**
-```bash
-# Abrir no navegador:
-http://localhost:5129/api/eventos/publico
-# Deve retornar JSON com eventos do banco
-```
-
-2. **Servir Frontend**
-```bash
-# Opção 1: Usar Live Server do VS Code
-# Clique direito em src/frontend/index.html → Open with Live Server
-
-# Opção 2: Usar Python
-cd src/frontend
-python -m http.server 8000
-# Acesse http://localhost:8000
-```
-
-3. **Validar Integração**
-- ✅ Verifique se o hero e grid de eventos carregam
-- ✅ Verifique o console do navegador (F12) para erros
-- ✅ Verifique se os eventos vêm do banco de dados (não estão hardcoded)
-
-### Frontend Configuration - API Centralizada
-
-A configuração da API é centralizada em um arquivo único para evitar duplicação:
-
-**Estrutura:**
-```
-src/frontend/
-├── config/
-│   └── api.js                    ← 🔑 FONTE ÚNICA DA CONFIGURAÇÃO
-├── js/
-│   ├── init-api-global.js        ← Expõe config como global para HTMLs
-│   ├── events-hero.js            ← Importa de config/api.js
-│   ├── home-carousel.js          ← Importa de config/api.js
-```
-
-**Como usar em um JS/JSX module novo:**
-```javascript
-import { API_BASE_URL } from '../config/api.js';
-
-fetch(`${API_BASE_URL}/api/eventos`)
-  .then(r => r.json())
-  .then(data => console.log(data));
-```
-
-**Como usar em um HTML novo:**
-```html
-<!-- Adicionar no início do <body> -->
-<script type="module" src="../js/init-api-global.js"></script>
-
-<!-- Depois usar normalmente -->
-<script>
-  console.log(window.API_BASE_URL);
-  fetch(`${window.API_BASE_URL}/api/eventos`);
-</script>
-```
-
-**Fallback automático:**
-- localStorage.getItem('API_URL') → permite override via localStorage
-- Produção: URL do Railway
-- Desenvolvimento local: `http://localhost:5129`
-
 ### Frontend
 
 Simplesmente abrir `src/frontend/index.html` em um navegador web.
@@ -180,12 +112,45 @@ Simplesmente abrir `src/frontend/index.html` em um navegador web.
 
 **Eventos**
 - `GET /api/eventos/publico` - Listar eventos de admins ativos (não obrigatório)
+- `GET /api/eventos/publico?categoria=musicais|cinema|eventos-diversos|viagens` - Filtrar eventos públicos por categoria
+- `GET /api/eventos?categoria=musicais|cinema|eventos-diversos|viagens` - Filtrar eventos por categoria
+- `GET /api/eventos/categorias` - Listar categorias válidas para eventos
+- `PUT /api/eventos/{id}` - Atualizar evento (admin dono do evento)
+- `DELETE /api/eventos/{id}` - Inativar evento (exclusão lógica, admin dono do evento)
 - `GET /api/eventos/{id}/assentos-ocupados` - Verificar assentos
 
+**Viagens (detalhes por evento)**
+- `GET /api/eventos/{eventoId}/viagem` - Consultar detalhes de viagem (evento da categoria viagens)
+- `PUT /api/eventos/{eventoId}/viagem` - Criar/atualizar detalhes de viagem (admin dono do evento)
+- `DELETE /api/eventos/{eventoId}/viagem` - Remover detalhes de viagem (admin dono do evento)
+
+**Tipos de ingresso**
+- `GET /api/eventos/{eventoId}/tipos-ingresso` - Listar tipos de ingresso ativos de um evento (público)
+- `GET /api/tipos-ingresso` - Listar tipos de ingresso dos eventos do admin autenticado
+- `POST /api/eventos/{eventoId}/tipos-ingresso` - Criar tipo de ingresso (admin dono do evento)
+- `PUT /api/tipos-ingresso/{id}` - Atualizar tipo de ingresso (admin dono do evento)
+- `DELETE /api/tipos-ingresso/{id}` - Desativar tipo de ingresso (admin dono do evento)
+
+### Categorias de Evento
+
+O backend agora suporta as categorias abaixo para eventos:
+
+- `musicais`
+- `cinema`
+- `eventos-diversos`
+- `viagens`
+
+Ao criar evento (`POST /api/eventos`), o campo `Categoria` pode ser enviado no payload.
+Se o campo não for informado, a API assume `musicais` por padrão.
+
 **Reservas**
-- `POST /api/reservas` - Criar reserva
+- `POST /api/reservas` - Criar reserva (aceita `TipoIngressoId` opcional)
 - `GET /api/reservas` - Listar reservas do usuário
 - `DELETE /api/reservas/{id}` - Cancelar reserva
+
+Regra por categoria na reserva:
+- `musicais` e `cinema`: assento obrigatório
+- `eventos-diversos` e `viagens`: assento opcional
 
 **Cupons**
 - `GET /api/cupons` - Listar cupons (admin)
@@ -211,6 +176,7 @@ dotnet test --verbosity normal
 - **Requisitos:** Ver [docs/requisitos.md](docs/requisitos.md)
 - **API Swagger:** Disponível em `/swagger` quando a API estiver rodando
 - **SQL Schema:** Ver [db/ticketprime.sql](db/ticketprime.sql)
+- **Migrações incrementais:** Ver scripts em [db/](db/)
 
 ## 🔐 Segurança
 

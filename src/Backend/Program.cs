@@ -84,33 +84,71 @@ catch (Exception ex)
 
 // ── EVENTOS ──────────────────────────────────────────────────────────────────
 
-app.MapGet("/api/eventos/publico", async () =>
+app.MapGet("/api/eventos/publico", async (string? categoria) =>
 {
+    var categoriaNormalizada = NormalizeEventCategory(categoria);
+    if (!string.IsNullOrWhiteSpace(categoria) && categoriaNormalizada is null)
+        return Results.BadRequest("Categoria invalida. Use: musicais, cinema, eventos-diversos ou viagens.");
+
     await using var connection = new NpgsqlConnection(connectionString);
-    var eventos = await connection.QueryAsync(@"
-        SELECT e.Id, e.Nome, e.CapacidadeTotal, e.DataEvento, e.PrecoPadrao, e.ImagemUrl
+    var eventos = categoriaNormalizada is null
+        ? await connection.QueryAsync(@"
+        SELECT e.Id, e.Nome, e.CapacidadeTotal, e.DataEvento, e.PrecoPadrao, e.ImagemUrl, e.Categoria
         FROM Eventos e
         INNER JOIN Usuarios u ON e.CriadoPorCpf = u.Cpf
         WHERE u.Ativa = TRUE
-        ORDER BY e.DataEvento DESC");
+                    AND e.Ativo = TRUE
+        ORDER BY e.DataEvento DESC")
+        : await connection.QueryAsync(@"
+        SELECT e.Id, e.Nome, e.CapacidadeTotal, e.DataEvento, e.PrecoPadrao, e.ImagemUrl, e.Categoria
+        FROM Eventos e
+        INNER JOIN Usuarios u ON e.CriadoPorCpf = u.Cpf
+        WHERE u.Ativa = TRUE
+                    AND e.Ativo = TRUE
+          AND e.Categoria = @Categoria
+        ORDER BY e.DataEvento DESC", new { Categoria = categoriaNormalizada });
     return Results.Ok(eventos);
 })
 .WithName("ListarEventosPublicos")
 .WithDescription("Lista eventos de admins ativos para exibicao publica")
 .Produces(200);
 
-app.MapGet("/api/eventos", async () =>
+app.MapGet("/api/eventos", async (string? categoria) =>
 {
+    var categoriaNormalizada = NormalizeEventCategory(categoria);
+    if (!string.IsNullOrWhiteSpace(categoria) && categoriaNormalizada is null)
+        return Results.BadRequest("Categoria invalida. Use: musicais, cinema, eventos-diversos ou viagens.");
+
     await using var connection = new NpgsqlConnection(connectionString);
-    var eventos = await connection.QueryAsync(@"
-        SELECT Id, Nome, CapacidadeTotal, DataEvento, PrecoPadrao, ImagemUrl
+    var eventos = categoriaNormalizada is null
+        ? await connection.QueryAsync(@"
+        SELECT Id, Nome, CapacidadeTotal, DataEvento, PrecoPadrao, ImagemUrl, Categoria
         FROM Eventos
-        ORDER BY DataEvento DESC");
+                WHERE Ativo = TRUE
+        ORDER BY DataEvento DESC")
+        : await connection.QueryAsync(@"
+        SELECT Id, Nome, CapacidadeTotal, DataEvento, PrecoPadrao, ImagemUrl, Categoria
+        FROM Eventos
+                WHERE Ativo = TRUE
+                    AND Categoria = @Categoria
+        ORDER BY DataEvento DESC", new { Categoria = categoriaNormalizada });
     return Results.Ok(eventos);
 })
 .AllowAnonymous()
 .WithName("ListarEventos")
 .WithDescription("Lista todos os eventos disponíveis")
+.Produces(200);
+
+app.MapGet("/api/eventos/categorias", () => Results.Ok(new[]
+{
+    "musicais",
+    "cinema",
+    "eventos-diversos",
+    "viagens"
+}))
+.AllowAnonymous()
+.WithName("CategoriasEvento")
+.WithDescription("Lista categorias de evento aceitas pela API")
 .Produces(200);
 
 app.MapPost("/api/eventos", async (CriarEventoRequest request, HttpContext httpContext) =>
@@ -125,6 +163,12 @@ app.MapPost("/api/eventos", async (CriarEventoRequest request, HttpContext httpC
     if (request.PrecoPadrao < 0)
         return Results.BadRequest("Preço não pode ser negativo");
 
+    var categoriaNormalizada = NormalizeEventCategory(request.Categoria);
+    if (!string.IsNullOrWhiteSpace(request.Categoria) && categoriaNormalizada is null)
+        return Results.BadRequest("Categoria invalida. Use: musicais, cinema, eventos-diversos ou viagens.");
+
+    categoriaNormalizada ??= "musicais";
+
     await using var connection = new NpgsqlConnection(connectionString);
     
     var adminAtivo = await connection.QueryFirstOrDefaultAsync(
@@ -135,15 +179,511 @@ app.MapPost("/api/eventos", async (CriarEventoRequest request, HttpContext httpC
         return Results.StatusCode(StatusCodes.Status403Forbidden);
 
     await connection.ExecuteAsync(@"
-        INSERT INTO Eventos (Nome, CapacidadeTotal, DataEvento, PrecoPadrao, CriadoPorCpf, ImagemUrl)
-        VALUES (@Nome, @CapacidadeTotal, @DataEvento, @PrecoPadrao, @CriadoPorCpf, @ImagemUrl)",
-        new { request.Nome, request.CapacidadeTotal, request.DataEvento, request.PrecoPadrao, CriadoPorCpf = auth!.Cpf, request.ImagemUrl });
+        INSERT INTO Eventos (Nome, CapacidadeTotal, DataEvento, PrecoPadrao, CriadoPorCpf, ImagemUrl, Categoria)
+        VALUES (@Nome, @CapacidadeTotal, @DataEvento, @PrecoPadrao, @CriadoPorCpf, @ImagemUrl, @Categoria)",
+        new
+        {
+            request.Nome,
+            request.CapacidadeTotal,
+            request.DataEvento,
+            request.PrecoPadrao,
+            CriadoPorCpf = auth!.Cpf,
+            request.ImagemUrl,
+            Categoria = categoriaNormalizada
+        });
 
     return Results.Created("/api/eventos", null);
 })
 .WithName("CriarEvento")
 .WithDescription("Cria evento vinculado ao administrador autenticado (deve estar ativo)")
 .Produces(201).Produces(401).Produces(403);
+
+app.MapPut("/api/eventos/{id:int}", async (int id, AtualizarEventoRequest request, HttpContext httpContext) =>
+{
+    var authError = TryAuthenticate(httpContext, tokenSecret, out var auth, "adm");
+    if (authError is not null) return authError;
+
+    if (string.IsNullOrWhiteSpace(request.Nome))
+        return Results.BadRequest("Nome do evento e obrigatorio.");
+    if (request.CapacidadeTotal <= 0)
+        return Results.BadRequest("Capacidade deve ser maior que zero.");
+    if (request.PrecoPadrao < 0)
+        return Results.BadRequest("Preco nao pode ser negativo.");
+
+    var categoriaNormalizada = NormalizeEventCategory(request.Categoria);
+    if (!string.IsNullOrWhiteSpace(request.Categoria) && categoriaNormalizada is null)
+        return Results.BadRequest("Categoria invalida. Use: musicais, cinema, eventos-diversos ou viagens.");
+
+    categoriaNormalizada ??= "musicais";
+
+    await using var connection = new NpgsqlConnection(connectionString);
+
+    var evento = await connection.QueryFirstOrDefaultAsync(@"
+        SELECT Id, CriadoPorCpf
+        FROM Eventos
+        WHERE Id = @Id", new { Id = id });
+
+    if (evento is null)
+        return Results.NotFound("Evento nao encontrado.");
+
+    if (!string.Equals((string)evento.CriadoPorCpf, auth!.Cpf, StringComparison.Ordinal))
+        return Results.StatusCode(StatusCodes.Status403Forbidden);
+
+    var reservasAtivas = await connection.QueryFirstAsync<int>(
+        "SELECT COUNT(1) FROM Reservas WHERE EventoId = @EventoId AND Status != 'cancelada'",
+        new { EventoId = id });
+
+    if (request.CapacidadeTotal < reservasAtivas)
+        return Results.BadRequest($"Capacidade total nao pode ser menor que o numero de reservas ativas ({reservasAtivas}).");
+
+    await connection.ExecuteAsync(@"
+        UPDATE Eventos
+        SET Nome = @Nome,
+            CapacidadeTotal = @CapacidadeTotal,
+            DataEvento = @DataEvento,
+            PrecoPadrao = @PrecoPadrao,
+            ImagemUrl = @ImagemUrl,
+            Categoria = @Categoria
+        WHERE Id = @Id",
+        new
+        {
+            Id = id,
+            request.Nome,
+            request.CapacidadeTotal,
+            request.DataEvento,
+            request.PrecoPadrao,
+            request.ImagemUrl,
+            Categoria = categoriaNormalizada
+        });
+
+    if (!string.Equals(categoriaNormalizada, "viagens", StringComparison.Ordinal))
+    {
+        await connection.ExecuteAsync(
+            "DELETE FROM EventosViagem WHERE EventoId = @EventoId",
+            new { EventoId = id });
+    }
+
+    return Results.Ok(new
+    {
+        Id = id,
+        request.Nome,
+        request.CapacidadeTotal,
+        request.DataEvento,
+        request.PrecoPadrao,
+        request.ImagemUrl,
+        Categoria = categoriaNormalizada
+    });
+})
+.WithName("AtualizarEvento")
+.WithDescription("Atualiza evento do administrador autenticado")
+.Produces(200).Produces(400).Produces(401).Produces(403).Produces(404);
+
+app.MapDelete("/api/eventos/{id:int}", async (int id, HttpContext httpContext) =>
+{
+    var authError = TryAuthenticate(httpContext, tokenSecret, out var auth, "adm");
+    if (authError is not null) return authError;
+
+    await using var connection = new NpgsqlConnection(connectionString);
+
+    var evento = await connection.QueryFirstOrDefaultAsync(@"
+        SELECT Id, CriadoPorCpf, Ativo
+        FROM Eventos
+        WHERE Id = @Id", new { Id = id });
+
+    if (evento is null)
+        return Results.NotFound("Evento nao encontrado.");
+
+    if (!string.Equals((string)evento.CriadoPorCpf, auth!.Cpf, StringComparison.Ordinal))
+        return Results.StatusCode(StatusCodes.Status403Forbidden);
+
+    if (!(bool)evento.Ativo)
+        return Results.BadRequest("Evento ja esta inativo.");
+
+    var reservasAtivas = await connection.QueryFirstAsync<int>(
+        "SELECT COUNT(1) FROM Reservas WHERE EventoId = @EventoId AND Status != 'cancelada'",
+        new { EventoId = id });
+
+    if (reservasAtivas > 0)
+        return Results.BadRequest("Nao e possivel inativar evento com reservas ativas.");
+
+    await connection.ExecuteAsync("UPDATE Eventos SET Ativo = FALSE WHERE Id = @Id", new { Id = id });
+    await connection.ExecuteAsync("UPDATE TiposIngresso SET Ativo = FALSE WHERE EventoId = @EventoId", new { EventoId = id });
+
+    return Results.Ok(new { mensagem = "Evento inativado com sucesso." });
+})
+.WithName("InativarEvento")
+.WithDescription("Inativa evento do administrador autenticado quando nao houver reservas ativas")
+.Produces(200).Produces(400).Produces(401).Produces(403).Produces(404);
+
+// ── DETALHES DE VIAGEM ──────────────────────────────────────────────────────
+
+app.MapGet("/api/eventos/{eventoId:int}/viagem", async (int eventoId) =>
+{
+    await using var connection = new NpgsqlConnection(connectionString);
+
+    var evento = await connection.QueryFirstOrDefaultAsync(@"
+        SELECT Id, Categoria, Ativo
+        FROM Eventos
+        WHERE Id = @EventoId", new { EventoId = eventoId });
+
+    if (evento is null || !(bool)evento.Ativo)
+        return Results.NotFound("Evento nao encontrado.");
+
+    var categoria = NormalizeEventCategory((string?)evento.Categoria) ?? "musicais";
+    if (!string.Equals(categoria, "viagens", StringComparison.Ordinal))
+        return Results.BadRequest("Detalhes de viagem sao permitidos apenas para eventos da categoria viagens.");
+
+    var detalhes = await connection.QueryFirstOrDefaultAsync(@"
+        SELECT EventoId, Origem, Destino, Companhia, PartidaEm, ChegadaEm, BagagemIncluida, Observacoes
+        FROM EventosViagem
+        WHERE EventoId = @EventoId", new { EventoId = eventoId });
+
+    if (detalhes is null)
+        return Results.NotFound("Detalhes de viagem nao cadastrados para este evento.");
+
+    return Results.Ok(detalhes);
+})
+.AllowAnonymous()
+.WithName("ObterDetalhesViagem")
+.WithDescription("Retorna os detalhes de viagem de um evento da categoria viagens")
+.Produces(200).Produces(400).Produces(404);
+
+app.MapPut("/api/eventos/{eventoId:int}/viagem", async (int eventoId, AtualizarDetalhesViagemRequest request, HttpContext httpContext) =>
+{
+    var authError = TryAuthenticate(httpContext, tokenSecret, out var auth, "adm");
+    if (authError is not null) return authError;
+
+    if (string.IsNullOrWhiteSpace(request.Origem)
+        || string.IsNullOrWhiteSpace(request.Destino)
+        || string.IsNullOrWhiteSpace(request.Companhia))
+        return Results.BadRequest("Origem, destino e companhia sao obrigatorios.");
+
+    if (request.ChegadaEm <= request.PartidaEm)
+        return Results.BadRequest("ChegadaEm deve ser maior que PartidaEm.");
+
+    await using var connection = new NpgsqlConnection(connectionString);
+
+    var evento = await connection.QueryFirstOrDefaultAsync(@"
+        SELECT Id, CriadoPorCpf, Categoria, Ativo
+        FROM Eventos
+        WHERE Id = @EventoId", new { EventoId = eventoId });
+
+    if (evento is null)
+        return Results.NotFound("Evento nao encontrado.");
+
+    if (!string.Equals((string)evento.CriadoPorCpf, auth!.Cpf, StringComparison.Ordinal))
+        return Results.StatusCode(StatusCodes.Status403Forbidden);
+
+    if (!(bool)evento.Ativo)
+        return Results.BadRequest("Nao e possivel atualizar detalhes de viagem para evento inativo.");
+
+    var categoria = NormalizeEventCategory((string?)evento.Categoria) ?? "musicais";
+    if (!string.Equals(categoria, "viagens", StringComparison.Ordinal))
+        return Results.BadRequest("Detalhes de viagem sao permitidos apenas para eventos da categoria viagens.");
+
+    var origem = request.Origem.Trim();
+    var destino = request.Destino.Trim();
+    var companhia = request.Companhia.Trim();
+    var observacoes = string.IsNullOrWhiteSpace(request.Observacoes) ? null : request.Observacoes.Trim();
+
+    await connection.ExecuteAsync(@"
+        INSERT INTO EventosViagem (EventoId, Origem, Destino, Companhia, PartidaEm, ChegadaEm, BagagemIncluida, Observacoes)
+        VALUES (@EventoId, @Origem, @Destino, @Companhia, @PartidaEm, @ChegadaEm, @BagagemIncluida, @Observacoes)
+        ON CONFLICT (EventoId) DO UPDATE
+        SET Origem = EXCLUDED.Origem,
+            Destino = EXCLUDED.Destino,
+            Companhia = EXCLUDED.Companhia,
+            PartidaEm = EXCLUDED.PartidaEm,
+            ChegadaEm = EXCLUDED.ChegadaEm,
+            BagagemIncluida = EXCLUDED.BagagemIncluida,
+            Observacoes = EXCLUDED.Observacoes",
+        new
+        {
+            EventoId = eventoId,
+            Origem = origem,
+            Destino = destino,
+            Companhia = companhia,
+            request.PartidaEm,
+            request.ChegadaEm,
+            request.BagagemIncluida,
+            Observacoes = observacoes
+        });
+
+    return Results.Ok(new
+    {
+        EventoId = eventoId,
+        Origem = origem,
+        Destino = destino,
+        Companhia = companhia,
+        request.PartidaEm,
+        request.ChegadaEm,
+        request.BagagemIncluida,
+        Observacoes = observacoes
+    });
+})
+.WithName("SalvarDetalhesViagem")
+.WithDescription("Cria ou atualiza detalhes de viagem de evento do administrador autenticado")
+.Produces(200).Produces(400).Produces(401).Produces(403).Produces(404);
+
+app.MapDelete("/api/eventos/{eventoId:int}/viagem", async (int eventoId, HttpContext httpContext) =>
+{
+    var authError = TryAuthenticate(httpContext, tokenSecret, out var auth, "adm");
+    if (authError is not null) return authError;
+
+    await using var connection = new NpgsqlConnection(connectionString);
+
+    var evento = await connection.QueryFirstOrDefaultAsync(@"
+        SELECT Id, CriadoPorCpf, Categoria
+        FROM Eventos
+        WHERE Id = @EventoId", new { EventoId = eventoId });
+
+    if (evento is null)
+        return Results.NotFound("Evento nao encontrado.");
+
+    if (!string.Equals((string)evento.CriadoPorCpf, auth!.Cpf, StringComparison.Ordinal))
+        return Results.StatusCode(StatusCodes.Status403Forbidden);
+
+    var categoria = NormalizeEventCategory((string?)evento.Categoria) ?? "musicais";
+    if (!string.Equals(categoria, "viagens", StringComparison.Ordinal))
+        return Results.BadRequest("Detalhes de viagem sao permitidos apenas para eventos da categoria viagens.");
+
+    var rows = await connection.ExecuteAsync(
+        "DELETE FROM EventosViagem WHERE EventoId = @EventoId",
+        new { EventoId = eventoId });
+
+    if (rows == 0)
+        return Results.NotFound("Detalhes de viagem nao cadastrados para este evento.");
+
+    return Results.Ok(new { mensagem = "Detalhes de viagem removidos com sucesso." });
+})
+.WithName("RemoverDetalhesViagem")
+.WithDescription("Remove detalhes de viagem de evento do administrador autenticado")
+.Produces(200).Produces(400).Produces(401).Produces(403).Produces(404);
+
+// ── TIPOS DE INGRESSO ───────────────────────────────────────────────────────
+
+app.MapGet("/api/eventos/{eventoId:int}/tipos-ingresso", async (int eventoId) =>
+{
+    await using var connection = new NpgsqlConnection(connectionString);
+
+    var eventoExiste = await connection.ExecuteScalarAsync<bool>(
+        "SELECT EXISTS(SELECT 1 FROM Eventos WHERE Id = @EventoId AND Ativo = TRUE)",
+        new { EventoId = eventoId });
+
+    if (!eventoExiste)
+        return Results.NotFound("Evento nao encontrado.");
+
+    var tipos = await connection.QueryAsync(@"
+        SELECT Id, EventoId, Nome, Preco, EstoqueTotal, Ativo
+        FROM TiposIngresso
+        WHERE EventoId = @EventoId AND Ativo = TRUE
+        ORDER BY Preco ASC, Nome ASC",
+        new { EventoId = eventoId });
+
+    return Results.Ok(tipos);
+})
+.AllowAnonymous()
+.WithName("ListarTiposIngressoPorEvento")
+.WithDescription("Lista tipos de ingresso ativos de um evento")
+.Produces(200).Produces(404);
+
+app.MapGet("/api/tipos-ingresso", async (HttpContext httpContext, int? eventoId) =>
+{
+    var authError = TryAuthenticate(httpContext, tokenSecret, out var auth, "adm");
+    if (authError is not null) return authError;
+
+    await using var connection = new NpgsqlConnection(connectionString);
+
+    var tipos = eventoId is null
+        ? await connection.QueryAsync(@"
+            SELECT t.Id, t.EventoId, e.Nome AS NomeEvento, t.Nome, t.Preco, t.EstoqueTotal, t.Ativo
+            FROM TiposIngresso t
+            INNER JOIN Eventos e ON e.Id = t.EventoId
+            WHERE e.CriadoPorCpf = @Cpf
+            ORDER BY t.EventoId DESC, t.Preco ASC", new { Cpf = auth!.Cpf })
+        : await connection.QueryAsync(@"
+            SELECT t.Id, t.EventoId, e.Nome AS NomeEvento, t.Nome, t.Preco, t.EstoqueTotal, t.Ativo
+            FROM TiposIngresso t
+            INNER JOIN Eventos e ON e.Id = t.EventoId
+            WHERE e.CriadoPorCpf = @Cpf
+              AND t.EventoId = @EventoId
+            ORDER BY t.Preco ASC", new { Cpf = auth!.Cpf, EventoId = eventoId.Value });
+
+    return Results.Ok(tipos);
+})
+.WithName("ListarTiposIngressoAdmin")
+.WithDescription("Lista tipos de ingresso dos eventos do admin autenticado")
+.Produces(200).Produces(401).Produces(403);
+
+app.MapPost("/api/eventos/{eventoId:int}/tipos-ingresso", async (int eventoId, CriarTipoIngressoRequest request, HttpContext httpContext) =>
+{
+    var authError = TryAuthenticate(httpContext, tokenSecret, out var auth, "adm");
+    if (authError is not null) return authError;
+
+    if (string.IsNullOrWhiteSpace(request.Nome))
+        return Results.BadRequest("Nome do tipo de ingresso e obrigatorio.");
+    if (request.Preco < 0)
+        return Results.BadRequest("Preco nao pode ser negativo.");
+    if (request.EstoqueTotal <= 0)
+        return Results.BadRequest("Estoque total deve ser maior que zero.");
+
+    var nomeTipo = request.Nome.Trim();
+
+    await using var connection = new NpgsqlConnection(connectionString);
+
+    var evento = await connection.QueryFirstOrDefaultAsync(@"
+        SELECT e.Id, e.CriadoPorCpf, e.Ativo, u.Ativa
+        FROM Eventos e
+        INNER JOIN Usuarios u ON u.Cpf = e.CriadoPorCpf
+        WHERE e.Id = @EventoId", new { EventoId = eventoId });
+
+    if (evento is null)
+        return Results.NotFound("Evento nao encontrado.");
+
+    if (!string.Equals((string)evento.CriadoPorCpf, auth!.Cpf, StringComparison.Ordinal))
+        return Results.StatusCode(StatusCodes.Status403Forbidden);
+
+    if (!(bool)evento.Ativo)
+        return Results.BadRequest("Nao e possivel criar tipo de ingresso para evento inativo.");
+
+    if (!(bool)evento.Ativa)
+        return Results.BadRequest("Nao e possivel criar tipo de ingresso para evento de administrador inativo.");
+
+    int tipoId;
+    try
+    {
+        tipoId = await connection.QueryFirstAsync<int>(@"
+            INSERT INTO TiposIngresso (EventoId, Nome, Preco, EstoqueTotal, Ativo)
+            VALUES (@EventoId, @Nome, @Preco, @EstoqueTotal, TRUE)
+            RETURNING Id",
+            new
+            {
+                EventoId = eventoId,
+                Nome = nomeTipo,
+                request.Preco,
+                request.EstoqueTotal
+            });
+    }
+    catch (PostgresException ex) when (ex.SqlState == PostgresErrorCodes.UniqueViolation)
+    {
+        return Results.BadRequest("Ja existe um tipo de ingresso com este nome para o evento informado.");
+    }
+
+    return Results.Created($"/api/tipos-ingresso/{tipoId}", new
+    {
+        Id = tipoId,
+        EventoId = eventoId,
+        Nome = nomeTipo,
+        request.Preco,
+        request.EstoqueTotal,
+        Ativo = true
+    });
+})
+.WithName("CriarTipoIngresso")
+.WithDescription("Cria tipo de ingresso para um evento do administrador autenticado")
+.Produces(201).Produces(400).Produces(401).Produces(403).Produces(404);
+
+app.MapPut("/api/tipos-ingresso/{id:int}", async (int id, AtualizarTipoIngressoRequest request, HttpContext httpContext) =>
+{
+    var authError = TryAuthenticate(httpContext, tokenSecret, out var auth, "adm");
+    if (authError is not null) return authError;
+
+    if (string.IsNullOrWhiteSpace(request.Nome))
+        return Results.BadRequest("Nome do tipo de ingresso e obrigatorio.");
+    if (request.Preco < 0)
+        return Results.BadRequest("Preco nao pode ser negativo.");
+    if (request.EstoqueTotal <= 0)
+        return Results.BadRequest("Estoque total deve ser maior que zero.");
+
+    var nomeTipo = request.Nome.Trim();
+
+    await using var connection = new NpgsqlConnection(connectionString);
+
+    var tipo = await connection.QueryFirstOrDefaultAsync(@"
+        SELECT t.Id, t.EventoId, t.Ativo, e.CriadoPorCpf
+        FROM TiposIngresso t
+        INNER JOIN Eventos e ON e.Id = t.EventoId
+        WHERE t.Id = @Id", new { Id = id });
+
+    if (tipo is null)
+        return Results.NotFound("Tipo de ingresso nao encontrado.");
+
+    if (!string.Equals((string)tipo.CriadoPorCpf, auth!.Cpf, StringComparison.Ordinal))
+        return Results.StatusCode(StatusCodes.Status403Forbidden);
+
+    var vendidosTipo = await connection.QueryFirstAsync<int>(
+        "SELECT COUNT(1) FROM Reservas WHERE TipoIngressoId = @TipoIngressoId AND Status != 'cancelada'",
+        new { TipoIngressoId = id });
+
+    if (request.EstoqueTotal < vendidosTipo)
+        return Results.BadRequest($"Estoque total nao pode ser menor que o numero de reservas ativas ({vendidosTipo}).");
+
+    try
+    {
+        await connection.ExecuteAsync(@"
+            UPDATE TiposIngresso
+            SET Nome = @Nome,
+                Preco = @Preco,
+                EstoqueTotal = @EstoqueTotal,
+                Ativo = @Ativo
+            WHERE Id = @Id",
+            new
+            {
+                Id = id,
+                Nome = nomeTipo,
+                request.Preco,
+                request.EstoqueTotal,
+                request.Ativo
+            });
+    }
+    catch (PostgresException ex) when (ex.SqlState == PostgresErrorCodes.UniqueViolation)
+    {
+        return Results.BadRequest("Ja existe um tipo de ingresso com este nome para o evento informado.");
+    }
+
+    return Results.Ok(new
+    {
+        Id = id,
+        EventoId = (int)tipo.EventoId,
+        Nome = nomeTipo,
+        request.Preco,
+        request.EstoqueTotal,
+        request.Ativo
+    });
+})
+.WithName("AtualizarTipoIngresso")
+.WithDescription("Atualiza tipo de ingresso do administrador autenticado")
+.Produces(200).Produces(400).Produces(401).Produces(403).Produces(404);
+
+app.MapDelete("/api/tipos-ingresso/{id:int}", async (int id, HttpContext httpContext) =>
+{
+    var authError = TryAuthenticate(httpContext, tokenSecret, out var auth, "adm");
+    if (authError is not null) return authError;
+
+    await using var connection = new NpgsqlConnection(connectionString);
+
+    var tipo = await connection.QueryFirstOrDefaultAsync(@"
+        SELECT t.Id, t.Ativo, e.CriadoPorCpf
+        FROM TiposIngresso t
+        INNER JOIN Eventos e ON e.Id = t.EventoId
+        WHERE t.Id = @Id", new { Id = id });
+
+    if (tipo is null)
+        return Results.NotFound("Tipo de ingresso nao encontrado.");
+
+    if (!string.Equals((string)tipo.CriadoPorCpf, auth!.Cpf, StringComparison.Ordinal))
+        return Results.StatusCode(StatusCodes.Status403Forbidden);
+
+    if (!(bool)tipo.Ativo)
+        return Results.BadRequest("Tipo de ingresso ja esta inativo.");
+
+    await connection.ExecuteAsync("UPDATE TiposIngresso SET Ativo = FALSE WHERE Id = @Id", new { Id = id });
+
+    return Results.Ok(new { mensagem = "Tipo de ingresso desativado com sucesso." });
+})
+.WithName("DesativarTipoIngresso")
+.WithDescription("Desativa tipo de ingresso do administrador autenticado")
+.Produces(200).Produces(400).Produces(401).Produces(403).Produces(404);
 
 // ── CUPONS ───────────────────────────────────────────────────────────────────
 
@@ -234,11 +774,24 @@ app.MapPost("/api/reservas", async (CriarReservaRequest request, HttpContext htt
         return Results.BadRequest("UsuarioCpf nao existe.");
 
     var evento = await connection.QueryFirstOrDefaultAsync<Evento>(
-        "SELECT Id, Nome, CapacidadeTotal, PrecoPadrao FROM Eventos WHERE Id = @Id",
+        "SELECT Id, Nome, CapacidadeTotal, PrecoPadrao, Categoria, Ativo FROM Eventos WHERE Id = @Id",
         new { Id = request.EventoId });
 
-    if (evento is null)
+    if (evento is null || !evento.Ativo)
         return Results.BadRequest("EventoId nao existe.");
+
+    TipoIngresso? tipoIngresso = null;
+    if (request.TipoIngressoId.HasValue)
+    {
+        tipoIngresso = await connection.QueryFirstOrDefaultAsync<TipoIngresso>(@"
+            SELECT Id, EventoId, Nome, Preco, EstoqueTotal, Ativo
+            FROM TiposIngresso
+            WHERE Id = @Id AND EventoId = @EventoId",
+            new { Id = request.TipoIngressoId.Value, EventoId = request.EventoId });
+
+        if (tipoIngresso is null || !tipoIngresso.Ativo)
+            return Results.BadRequest("TipoIngressoId invalido para este evento.");
+    }
 
     // [Regra R2] Limite por CPF: O mesmo CPF não pode ter mais de 2 reservas para o mesmo EventoId
     var reservasCpf = await connection.QueryFirstAsync<int>(
@@ -256,8 +809,20 @@ app.MapPost("/api/reservas", async (CriarReservaRequest request, HttpContext htt
     if (reservados >= evento.CapacidadeTotal)
         return Results.BadRequest("Evento sem vagas disponiveis.");
 
-    // [Regra R4] Motor de Cupons: Buscar o cupom no banco. O desconto só é aplicado sobre o PrecoPadrao se o preço do evento for maior ou igual ao ValorMinimoRegra do cupom.
-    decimal precoFinal = evento.PrecoPadrao;
+    if (tipoIngresso is not null)
+    {
+        var vendidosTipo = await connection.QueryFirstAsync<int>(
+            "SELECT COUNT(1) FROM Reservas WHERE EventoId = @EventoId AND TipoIngressoId = @TipoIngressoId AND Status != 'cancelada'",
+            new { EventoId = request.EventoId, TipoIngressoId = tipoIngresso.Id });
+
+        if (vendidosTipo >= tipoIngresso.EstoqueTotal)
+            return Results.BadRequest("Tipo de ingresso sem vagas disponiveis.");
+    }
+
+    var precoBase = tipoIngresso?.Preco ?? evento.PrecoPadrao;
+
+    // [Regra R4] Motor de Cupons: Buscar o cupom no banco. O desconto só é aplicado sobre o preço base se ele for maior ou igual ao ValorMinimoRegra do cupom.
+    decimal precoFinal = precoBase;
     string? codigoCupomAplicado = null;
 
     if (!string.IsNullOrWhiteSpace(request.CodigoCupom))
@@ -269,15 +834,20 @@ app.MapPost("/api/reservas", async (CriarReservaRequest request, HttpContext htt
         if (cupom is null)
             return Results.BadRequest("Cupom invalido.");
 
-        if (evento.PrecoPadrao < cupom.ValorMinimoRegra)
+        if (precoBase < cupom.ValorMinimoRegra)
             return Results.BadRequest($"Preco minimo para este cupom e R$ {cupom.ValorMinimoRegra:F2}.");
 
-        var desconto = evento.PrecoPadrao * (cupom.PorcentagemDesconto / 100m);
-        precoFinal = evento.PrecoPadrao - desconto;
+        var desconto = precoBase * (cupom.PorcentagemDesconto / 100m);
+        precoFinal = precoBase - desconto;
         codigoCupomAplicado = cupom.Codigo;
     }
 
-    // Assento check (original logic fallback)
+    var categoriaEvento = NormalizeEventCategory(evento.Categoria) ?? "musicais";
+    var assentoObrigatorio = categoriaEvento is "musicais" or "cinema";
+    if (assentoObrigatorio && string.IsNullOrWhiteSpace(request.Assento))
+        return Results.BadRequest("Assento e obrigatorio para categorias musicais e cinema.");
+
+    // Assento check
     if (!string.IsNullOrWhiteSpace(request.Assento))
     {
         var assentosRow = await connection.QueryAsync<string>(
@@ -296,8 +866,8 @@ app.MapPost("/api/reservas", async (CriarReservaRequest request, HttpContext htt
 
     // Cria a reserva
     var reservaId = await connection.QueryFirstAsync<int>(@"
-        INSERT INTO Reservas (EventoId, UsuarioCpf, PrecoFinal, CupomCodigo, Status, CriadoEm, Assento)
-        VALUES (@EventoId, @UsuarioCpf, @PrecoFinal, @CupomCodigo, 'confirmada', NOW(), @Assento)
+        INSERT INTO Reservas (EventoId, UsuarioCpf, PrecoFinal, CupomCodigo, Status, CriadoEm, Assento, TipoIngressoId)
+        VALUES (@EventoId, @UsuarioCpf, @PrecoFinal, @CupomCodigo, 'confirmada', NOW(), @Assento, @TipoIngressoId)
         RETURNING Id",
         new
         {
@@ -305,7 +875,8 @@ app.MapPost("/api/reservas", async (CriarReservaRequest request, HttpContext htt
             UsuarioCpf = cpfNormalizado,
             PrecoFinal = precoFinal,
             CupomCodigo = codigoCupomAplicado,
-            Assento = string.IsNullOrWhiteSpace(request.Assento) ? null : request.Assento.Trim()
+            Assento = string.IsNullOrWhiteSpace(request.Assento) ? null : request.Assento.Trim(),
+            TipoIngressoId = request.TipoIngressoId
         });
 
     return Results.Created($"/api/reservas/{reservaId}", new
@@ -313,7 +884,9 @@ app.MapPost("/api/reservas", async (CriarReservaRequest request, HttpContext htt
         Id = reservaId,
         EventoId = request.EventoId,
         NomeEvento = evento.Nome,
-        PrecoOriginal = evento.PrecoPadrao,
+        TipoIngressoId = request.TipoIngressoId,
+        TipoIngressoNome = tipoIngresso?.Nome,
+        PrecoOriginal = precoBase,
         PrecoFinal = precoFinal,
         CupomAplicado = codigoCupomAplicado,
         Status = "confirmada"
@@ -329,9 +902,11 @@ app.MapGet("/api/reservas/{cpf}", async (string cpf) =>
     await using var connection = new NpgsqlConnection(connectionString);
     var reservas = await connection.QueryAsync(@"
         SELECT r.Id, r.EventoId, e.Nome AS NomeEvento, e.DataEvento,
-               r.PrecoFinal, r.CupomCodigo, r.Status, r.CriadoEm, r.Assento
+             r.PrecoFinal, r.CupomCodigo, r.Status, r.CriadoEm, r.Assento,
+             r.TipoIngressoId, ti.Nome AS TipoIngressoNome
         FROM Reservas r
         INNER JOIN Eventos e ON e.Id = r.EventoId
+         LEFT JOIN TiposIngresso ti ON ti.Id = r.TipoIngressoId
         WHERE r.UsuarioCpf = @Cpf
         ORDER BY r.CriadoEm DESC",
         new { Cpf = cpfNormalizado });
@@ -350,9 +925,11 @@ app.MapGet("/api/reservas", async (HttpContext httpContext) =>
     await using var connection = new NpgsqlConnection(connectionString);
     var reservas = await connection.QueryAsync(@"
         SELECT r.Id, r.EventoId, e.Nome AS NomeEvento, e.DataEvento,
-               r.PrecoFinal, r.CupomCodigo, r.Status, r.CriadoEm
+             r.PrecoFinal, r.CupomCodigo, r.Status, r.CriadoEm,
+             r.TipoIngressoId, ti.Nome AS TipoIngressoNome
         FROM Reservas r
         INNER JOIN Eventos e ON e.Id = r.EventoId
+         LEFT JOIN TiposIngresso ti ON ti.Id = r.TipoIngressoId
         WHERE r.UsuarioCpf = @Cpf
         ORDER BY r.CriadoEm DESC",
         new { Cpf = auth!.Cpf });
@@ -694,6 +1271,15 @@ static string? NormalizeAccountType(string? value)
     return normalized is "usuario" or "adm" ? normalized : null;
 }
 
+static string? NormalizeEventCategory(string? value)
+{
+    if (string.IsNullOrWhiteSpace(value)) return null;
+    var normalized = value.Trim().ToLowerInvariant();
+    return normalized is "musicais" or "cinema" or "eventos-diversos" or "viagens"
+        ? normalized
+        : null;
+}
+
 static string? ResolveConnectionString(IConfiguration configuration)
 {
     var configuredConnectionString = configuration.GetConnectionString("DefaultConnection")
@@ -847,14 +1433,70 @@ static async Task EnsureAuthSchemaAsync(string connectionString, ILogger logger)
             CapacidadeTotal INTEGER NOT NULL,
             DataEvento TIMESTAMPTZ NOT NULL,
             PrecoPadrao NUMERIC(10,2) NOT NULL,
-            CriadoPorCpf VARCHAR(11) NOT NULL REFERENCES Usuarios(Cpf)
+            CriadoPorCpf VARCHAR(11) NOT NULL REFERENCES Usuarios(Cpf),
+            Categoria TEXT NOT NULL DEFAULT 'musicais',
+            Ativo BOOLEAN NOT NULL DEFAULT TRUE
         );
         ALTER TABLE Eventos ADD COLUMN IF NOT EXISTS ImagemUrl TEXT;
+        ALTER TABLE Eventos ADD COLUMN IF NOT EXISTS Categoria TEXT;
+        ALTER TABLE Eventos ADD COLUMN IF NOT EXISTS Ativo BOOLEAN;
+        UPDATE Eventos SET Categoria = 'musicais' WHERE Categoria IS NULL OR btrim(Categoria) = '';
+        UPDATE Eventos SET Ativo = TRUE WHERE Ativo IS NULL;
+        ALTER TABLE Eventos ALTER COLUMN Categoria SET DEFAULT 'musicais';
+        ALTER TABLE Eventos ALTER COLUMN Categoria SET NOT NULL;
+        ALTER TABLE Eventos ALTER COLUMN Ativo SET DEFAULT TRUE;
+        ALTER TABLE Eventos ALTER COLUMN Ativo SET NOT NULL;
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1
+                FROM pg_constraint
+                WHERE conname = 'ck_eventos_categoria'
+            ) THEN
+                ALTER TABLE Eventos
+                ADD CONSTRAINT ck_eventos_categoria
+                CHECK (Categoria IN ('musicais', 'cinema', 'eventos-diversos', 'viagens'));
+            END IF;
+        END $$;
+        CREATE INDEX IF NOT EXISTS IX_Eventos_Categoria_DataEvento ON Eventos (Categoria, DataEvento DESC);
         CREATE TABLE IF NOT EXISTS Cupons (
             Codigo TEXT PRIMARY KEY,
             PorcentagemDesconto NUMERIC(5,2) NOT NULL,
             ValorMinimoRegra NUMERIC(10,2) NOT NULL,
             CriadoPorCpf VARCHAR(11) REFERENCES Usuarios(Cpf)
+        );
+        CREATE TABLE IF NOT EXISTS TiposIngresso (
+            Id SERIAL PRIMARY KEY,
+            EventoId INTEGER NOT NULL REFERENCES Eventos(Id) ON DELETE CASCADE,
+            Nome TEXT NOT NULL,
+            Preco NUMERIC(10,2) NOT NULL,
+            EstoqueTotal INTEGER NOT NULL,
+            Ativo BOOLEAN NOT NULL DEFAULT TRUE,
+            CONSTRAINT ck_tipos_ingresso_preco_nonnegative CHECK (Preco >= 0),
+            CONSTRAINT ck_tipos_ingresso_estoque_positive CHECK (EstoqueTotal > 0)
+        );
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1
+                FROM pg_constraint
+                WHERE conname = 'uq_tipos_ingresso_evento_nome'
+            ) THEN
+                ALTER TABLE TiposIngresso
+                ADD CONSTRAINT uq_tipos_ingresso_evento_nome UNIQUE (EventoId, Nome);
+            END IF;
+        END $$;
+        CREATE INDEX IF NOT EXISTS IX_TiposIngresso_EventoId_Ativo ON TiposIngresso (EventoId, Ativo);
+        CREATE TABLE IF NOT EXISTS EventosViagem (
+            EventoId INTEGER PRIMARY KEY REFERENCES Eventos(Id) ON DELETE CASCADE,
+            Origem TEXT NOT NULL,
+            Destino TEXT NOT NULL,
+            Companhia TEXT NOT NULL,
+            PartidaEm TIMESTAMPTZ NOT NULL,
+            ChegadaEm TIMESTAMPTZ NOT NULL,
+            BagagemIncluida BOOLEAN NOT NULL DEFAULT FALSE,
+            Observacoes TEXT,
+            CONSTRAINT ck_eventos_viagem_periodo CHECK (ChegadaEm > PartidaEm)
         );
         CREATE TABLE IF NOT EXISTS Reservas (
             Id SERIAL PRIMARY KEY,
@@ -864,9 +1506,24 @@ static async Task EnsureAuthSchemaAsync(string connectionString, ILogger logger)
             CupomCodigo TEXT,
             Status TEXT NOT NULL DEFAULT 'confirmada',
             CriadoEm TIMESTAMPTZ NOT NULL,
-            Assento TEXT
+            Assento TEXT,
+            TipoIngressoId INTEGER
         );
         ALTER TABLE Reservas ADD COLUMN IF NOT EXISTS Assento TEXT;
+        ALTER TABLE Reservas ADD COLUMN IF NOT EXISTS TipoIngressoId INTEGER;
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1
+                FROM pg_constraint
+                WHERE conname = 'fk_reservas_tipoingresso'
+            ) THEN
+                ALTER TABLE Reservas
+                ADD CONSTRAINT fk_reservas_tipoingresso
+                FOREIGN KEY (TipoIngressoId) REFERENCES TiposIngresso(Id);
+            END IF;
+        END $$;
+        CREATE INDEX IF NOT EXISTS IX_Reservas_EventoId_TipoIngressoId ON Reservas (EventoId, TipoIngressoId);
     ");
 
     var eventosSemCriador = await connection.ExecuteScalarAsync<int>(@"
@@ -886,9 +1543,13 @@ static async Task EnsureAuthSchemaAsync(string connectionString, ILogger logger)
     }
 }
 
-record CriarEventoRequest(string Nome, int CapacidadeTotal, DateTime DataEvento, decimal PrecoPadrao, string? ImagemUrl);
+record CriarEventoRequest(string Nome, int CapacidadeTotal, DateTime DataEvento, decimal PrecoPadrao, string? ImagemUrl, string? Categoria);
+record AtualizarEventoRequest(string Nome, int CapacidadeTotal, DateTime DataEvento, decimal PrecoPadrao, string? ImagemUrl, string? Categoria);
 record CriarCupomRequest(string Codigo, decimal PorcentagemDesconto, decimal ValorMinimoRegra);
-record CriarReservaRequest(int EventoId, string? UsuarioCpf, string? CodigoCupom, string? Assento);
+record CriarTipoIngressoRequest(string Nome, decimal Preco, int EstoqueTotal);
+record AtualizarTipoIngressoRequest(string Nome, decimal Preco, int EstoqueTotal, bool Ativo);
+record AtualizarDetalhesViagemRequest(string Origem, string Destino, string Companhia, DateTime PartidaEm, DateTime ChegadaEm, bool BagagemIncluida, string? Observacoes);
+record CriarReservaRequest(int EventoId, string? UsuarioCpf, string? CodigoCupom, string? Assento, int? TipoIngressoId);
 record CriarUsuarioRequest(string Cpf, string Nome, string Email, string Senha, string TipoConta);
 record RegistrarRequest(string Nome, string Cpf, string Email, string Senha, string? TipoConta);
 record RegistrarAdminRequest(string Nome, string Cpf, string Email, string Senha);
@@ -916,6 +1577,8 @@ public class Evento
     public string Nome { get; set; } = string.Empty;
     public int CapacidadeTotal { get; set; }
     public decimal PrecoPadrao { get; set; }
+    public string? Categoria { get; set; }
+    public bool Ativo { get; set; }
 }
 
 public class Cupom
@@ -923,4 +1586,26 @@ public class Cupom
     public string Codigo { get; set; } = string.Empty;
     public decimal PorcentagemDesconto { get; set; }
     public decimal ValorMinimoRegra { get; set; }
+}
+
+public class TipoIngresso
+{
+    public int Id { get; set; }
+    public int EventoId { get; set; }
+    public string Nome { get; set; } = string.Empty;
+    public decimal Preco { get; set; }
+    public int EstoqueTotal { get; set; }
+    public bool Ativo { get; set; }
+}
+
+public class EventoViagem
+{
+    public int EventoId { get; set; }
+    public string Origem { get; set; } = string.Empty;
+    public string Destino { get; set; } = string.Empty;
+    public string Companhia { get; set; } = string.Empty;
+    public DateTime PartidaEm { get; set; }
+    public DateTime ChegadaEm { get; set; }
+    public bool BagagemIncluida { get; set; }
+    public string? Observacoes { get; set; }
 }
