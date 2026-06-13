@@ -91,7 +91,7 @@ const CATEGORY_FALLBACK_IMAGE_POOLS = {
         './imagens/categorias/copa/argentina.jpg',
         './imagens/categorias/copa/br.avif',
         './imagens/categorias/copa/bra.png',
-        './imagens/categorias/copa/pt.png',
+        './imagens/categorias/copa/pt.avif',
         './imagens/categorias/copa/000-32z77xj.webp'
     ],
     viagens: [
@@ -157,7 +157,7 @@ const LEGACY_IMAGE_TO_CATEGORY_PATH = {
     'argentina.jpg': './imagens/categorias/copa/argentina.jpg',
     'br.avif': './imagens/categorias/copa/br.avif',
     'bra.png': './imagens/categorias/copa/bra.png',
-    'pt.png': './imagens/categorias/copa/pt.png',
+    'pt.avif': './imagens/categorias/copa/pt.avif',
     '000-32z77xj.webp': './imagens/categorias/copa/000-32z77xj.webp',
     'fundoviagens.png': './imagens/categorias/viagens/fundoviagens.png',
     'metro.png': './imagens/categorias/viagens/metro.png',
@@ -218,6 +218,15 @@ function pickNextCategoryImage(slug, fallbackImage) {
 
 async function carregarImagensCategoriaPool() {
     const loaders = CATEGORY_DATA.map(async (categoria) => {
+        const imagensFallback = (CATEGORY_FALLBACK_IMAGE_POOLS[categoria.slug] || []).map(normalizeImageUrl).filter(Boolean);
+
+        // For the home hero, keep category imagery curated and deterministic.
+        // API images can vary by environment and may mix visual identities across categories.
+        if (imagensFallback.length) {
+            categoryImagePools.set(categoria.slug, [...new Set(imagensFallback)]);
+            return;
+        }
+
         try {
             const response = await fetch(`${API_BASE_URL}/api/eventos/publico?categoria=${encodeURIComponent(categoria.slug)}`);
             if (!response.ok) return;
@@ -226,16 +235,14 @@ async function carregarImagensCategoriaPool() {
             if (!Array.isArray(eventos)) return;
 
             const imagensApi = eventos.map(extractEventImageUrl).filter(Boolean);
-            const imagensFallback = (CATEGORY_FALLBACK_IMAGE_POOLS[categoria.slug] || []).map(normalizeImageUrl).filter(Boolean);
-            const imagens = [...new Set([...imagensApi, ...imagensFallback])];
+            const imagens = [...new Set(imagensApi)];
             if (imagens.length) categoryImagePools.set(categoria.slug, imagens);
         } catch (error) {
             // Keep fallback image when API is unavailable for a category.
         }
 
-        const fallbackOnly = (CATEGORY_FALLBACK_IMAGE_POOLS[categoria.slug] || []).map(normalizeImageUrl).filter(Boolean);
-        if (fallbackOnly.length && !categoryImagePools.has(categoria.slug)) {
-            categoryImagePools.set(categoria.slug, [...new Set(fallbackOnly)]);
+        if (imagensFallback.length && !categoryImagePools.has(categoria.slug)) {
+            categoryImagePools.set(categoria.slug, [...new Set(imagensFallback)]);
         }
     });
 
