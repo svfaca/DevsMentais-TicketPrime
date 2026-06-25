@@ -1,6 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins&display=swap');
 
 :root {
+    --cor-pagina-primary: #000000;
+    --cor-pagina-secondary: #111111;
     --hero-accent: #ff9b43;
     --hero-accent-alt: #ff6f2c;
     --hero-cta-text: #ffffff;
@@ -16,7 +18,7 @@
 body {
     min-height: 100vh;
     display: flex;
-    background: linear-gradient(180deg, var(--cor-pagina-primary, #143a52) 0%, var(--cor-pagina-secondary, #101b33) 100%);
+    background: linear-gradient(180deg, var(--cor-pagina-primary, #000000) 0%, var(--cor-pagina-secondary, #111111) 100%);
     justify-content: center;
     align-items: center;
     color: #fff;
@@ -63,7 +65,7 @@ body {
 }
 
 .home-page {
-    background: linear-gradient(135deg, #143a52 0%, #101b33 55%, #1d2a5a 100%);
+    background: linear-gradient(135deg, #000000 0%, #111111 55%, #1a1a1a 100%);
     flex-direction: column;
     justify-content: flex-start;
     align-items: stretch;
@@ -91,8 +93,8 @@ body {
     align-items: center;
     background: linear-gradient(
         135deg,
-        color-mix(in srgb, var(--cor-pagina-primary, #143a52) 92%, black) 0%,
-        color-mix(in srgb, var(--cor-pagina-secondary, #101b33) 78%, black) 100%
+        color-mix(in srgb, var(--cor-pagina-primary, #000000) 92%, black) 0%,
+        color-mix(in srgb, var(--cor-pagina-secondary, #111111) 78%, black) 100%
     );
     border-bottom: 1px solid rgba(255, 255, 255, 0.12);
     backdrop-filter: blur(10px);
@@ -597,7 +599,7 @@ body.light-mode .theme-toggle {
     /* fit exactly the viewport height */
     height: 100vh;
     overflow: hidden;
-    background: linear-gradient(135deg, color-mix(in srgb, var(--cor-pagina-primary, #143a52) 86%, black) 0%, color-mix(in srgb, var(--cor-pagina-secondary, #101b33) 68%, black) 100%);
+    background: linear-gradient(135deg, color-mix(in srgb, var(--cor-pagina-primary, #000000) 86%, black) 0%, color-mix(in srgb, var(--cor-pagina-secondary, #111111) 68%, black) 100%);
     transition: background 450ms ease;
 }
 
@@ -619,11 +621,11 @@ body.light-mode .theme-toggle {
     flex-direction: column;
     align-items: flex-start;
     justify-content: flex-end;
-    padding: 40px 60px;
+    padding: 72px 60px 60px 60px;
     background-size: cover;
-    background-position: center;
+    background-position: center top;
     background-repeat: no-repeat;
-    background-color: var(--cor-pagina, #143a52);
+    background-color: var(--cor-pagina, #000000);
     opacity: 0;
     transition: opacity 800ms ease;
     z-index: 1;
@@ -1310,7 +1312,7 @@ body.light-mode .theme-toggle {
 
 .site-footer {
     width: 100%;
-    background: linear-gradient(180deg, var(--cor-pagina-secondary, #101b33) 0%, rgba(0,0,0,0.6) 100%);
+    background: linear-gradient(180deg, var(--cor-pagina-secondary, #111111) 0%, rgba(0,0,0,0.6) 100%);
     color: #fff;
     padding: 16px 20px;
     text-align: center;
@@ -1581,7 +1583,7 @@ label {
 }
 
 .painel-ingresso {
-    background: var(--cor-pagina, #143a52) !important;
+    background: var(--cor-pagina, #000000) !important;
 }
 
 .admin-dashboard {

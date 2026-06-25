@@ -171,7 +171,7 @@
       'br.avif': '../imagens/categorias/copa/br.avif',
       'bra.png': '../imagens/categorias/copa/bra.png',
       'pt.png': '../imagens/categorias/copa/pt.png',
-      '000-32z77xj.webp': '../imagens/categorias/copa/000-32z77xj.webp',
+      'BR1.jpg.webp': '../imagens/categorias/copa/BR1.jpg.webp',
       'fundoviagens.png': '../imagens/categorias/viagens/fundoviagens.png',
       'fundo.jpg': '../imagens/home/fundo.jpg'
     };
@@ -223,7 +223,7 @@
     function complementaryHex(hex){ try{ const {r,g,b}=hexToRgb(hex||'#000000'); return rgbToHex(255-r,255-g,255-b); }catch(e){ return '#cbd5e1'; } }
     function applyComplementaryPillStyle(primaryHex, secondaryHex, categoryBase, forcedHighlightHex){
       if(!navbarCategoryPill) return;
-      let base = blendHex(primaryHex || '#143a52', secondaryHex || '#101b33', 0.38);
+      let base = blendHex(primaryHex || '#000000', secondaryHex || '#111111', 0.38);
       if(categoryBase) base = blendHex(base, categoryBase, 0.35);
       const comp = forcedHighlightHex || complementaryHex(base);
       let bg = blendHex(comp, '#ffffff', 0.58);

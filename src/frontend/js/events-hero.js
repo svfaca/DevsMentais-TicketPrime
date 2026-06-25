@@ -90,9 +90,10 @@ const CATEGORY_FALLBACK_IMAGE_POOLS = {
         './imagens/categorias/copa/copa.webp',
         './imagens/categorias/copa/argentina.jpg',
         './imagens/categorias/copa/br.avif',
+        './imagens/categorias/copa/br.jpg',
         './imagens/categorias/copa/bra.png',
         './imagens/categorias/copa/pt.png',
-        './imagens/categorias/copa/000-32z77xj.webp'
+        './imagens/categorias/copa/BR1.jpg'
     ],
     viagens: [
         './imagens/categorias/viagens/fundoviagens.png',
@@ -164,9 +165,11 @@ const LEGACY_IMAGE_TO_CATEGORY_PATH = {
     'copa.webp': './imagens/categorias/copa/copa.webp',
     'argentina.jpg': './imagens/categorias/copa/argentina.jpg',
     'br.avif': './imagens/categorias/copa/br.avif',
+    'br.jpg': './imagens/categorias/copa/br.jpg',
     'bra.png': './imagens/categorias/copa/bra.png',
     'pt.png': './imagens/categorias/copa/pt.png',
-    '000-32z77xj.webp': './imagens/categorias/copa/000-32z77xj.webp',
+    'br1.jpg': './imagens/categorias/copa/BR1.jpg',
+    'br1.jpg.webp': './imagens/categorias/copa/BR1.jpg',
     'fundoviagens.png': './imagens/categorias/viagens/fundoviagens.png',
     'metro.png': './imagens/categorias/viagens/metro.png',
     'onibus.png': './imagens/categorias/viagens/onibus.png',
@@ -501,7 +504,7 @@ function complementaryHex(hex) {
 function applyComplementaryPillStyle(pill, primaryHex, secondaryHex, categoryBase, forcedHighlightHex) {
     if (!pill) return;
 
-    let base = blendHex(primaryHex || '#143a52', secondaryHex || '#101b33', 0.38);
+    let base = blendHex(primaryHex || '#000000', secondaryHex || '#111111', 0.38);
     if (categoryBase) base = blendHex(base, categoryBase, 0.35);
 
     let comp = forcedHighlightHex || complementaryHex(base);
@@ -524,8 +527,8 @@ function atualizarPaletaCTA(primaryHex, secondaryHex, categoryBase, paletteOverr
         return;
     }
 
-    const primary = primaryHex || '#143a52';
-    const secondary = secondaryHex || '#101b33';
+    const primary = primaryHex || '#000000';
+    const secondary = secondaryHex || '#111111';
 
     let accentA = blendHex(primary, secondary, 0.42);
     if (categoryBase) accentA = blendHex(accentA, categoryBase, 0.46);
