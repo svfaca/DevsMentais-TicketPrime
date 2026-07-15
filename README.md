@@ -177,5 +177,6 @@ dotnet test --verbosity normal
 - @MiriamSsntos
 - @patrickmqs
 - @svfaca
+- @MatheusPrudente04
 
 Projeto acadêmico da disciplina de Engenharia de Software.
